@@ -2,6 +2,7 @@ import User from './User'
 import PostgresStore from '../PostgresStore'
 
 class Channel {
+    
 
 
     static tableName: string
@@ -37,6 +38,18 @@ class Channel {
                 channelId
             ]
         })
+    }
+    static async create(channelName: String, userId: any) {
+        const result = await PostgresStore.pgPool.query({
+            text: `INSERT INTO ${Channel.tableName} 
+                    (name,author) values($1,$2)
+                    RETURNING *
+                   `,
+            values: [
+                channelName, userId
+            ]
+        })
+        return result.rows[0]
     }
 }
 

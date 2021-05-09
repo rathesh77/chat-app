@@ -74,7 +74,6 @@ socket.on('connection', async (client: io.Socket) => {
         //console.log(client.request.headers.cookie);
         //client.handshake.session?.save()
         console.log(client.handshake.session?.id);
-
         socketController.broadcastMessage(data)
     })
     client.on('signal', async (fullName: string) => {
@@ -83,12 +82,7 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('userIsNotTypingAnymore', async () => {
         socketController.noticeThatAUserIsNotTypingAnymore(client.id)
     })
-    client.on('deleteChannel', async (channelName: String) => {
-        let channelToDelete = await Channel.findByNameAndAuthor(channelName, client.handshake.session?.user?.id)
-        if (channelToDelete) {
-            await Channel.deleteById(channelToDelete.id)
-        }
-    })
+
     client.on('disconnect', () => {
         console.log('client is disconnected')
     })
@@ -124,8 +118,7 @@ app.post('/register', mustNotBeAuthenticated, async function (req, res) {
         })
         return
     }
-    let user = req.body
-    User.create(user)
+    let user = await User.create(req.body)
     delete user.password
     req.session.user = user
     res.json(user)
@@ -159,6 +152,32 @@ app.get('/logout', hasToBeAuthenticated, function (req, res) {
     res.json({ message: 'Déconnecté' })
 })
 
+app.post('/channel', hasToBeAuthenticated, async function (req, res) {
+    console.log(req.session);
+    
+    let channelToCreate = await Channel.create(req.body.name, req.session.user?.id)
+    await UserChannel.create(channelToCreate.id, req.session.user?.id)
+    res.json(channelToCreate)
+})
+app.delete('/channel', async function (req, res) {
+    if (!req.body.channelName) {
+        res.status(401)
+        res.send({
+            message: 'no channel provided'
+        })
+        return
+    }
+    let channelToDelete = await Channel.findByNameAndAuthor(req.body.channelName, req.session.user?.id)
+    if (!channelToDelete) {
+        res.status(401)
+        res.send({
+            message: 'you must provide a valid channel'
+        })
+        return
+    }
+    await Channel.deleteById(channelToDelete.id)
+    res.send('channel deleted')
+})
 app.get('/channels', hasToBeAuthenticated, async function (req, res) {
 
     let userChannels = await UserChannel.findByUserId(req.session?.user?.id)
