@@ -1,6 +1,7 @@
 import { MessageI } from '../../entities/Message'
 import { SocketRepository } from '../../repositories'
-import io from 'socket.io'
+import io, { Socket } from 'socket.io'
+import { ChannelI } from '../../entities/Channel'
 
 export class inMemorySocketRepository implements SocketRepository {
 
@@ -19,21 +20,27 @@ export class inMemorySocketRepository implements SocketRepository {
         })
 
     }
-    noticeThatAUserIsTyping(clientId: string, fullname: string): void {
-        this.membersTyping[clientId] = { id: clientId, fullName: fullname }
-        this.clients.forEach((c) => {
+    noticeThatAUserIsTyping(client: Socket, fullname: string, channel: ChannelI): void {
+        if (!this.membersTyping[channel.name])
+            this.membersTyping[channel.name] = {}
+        this.membersTyping[channel.name][client.id] = { id: client.id, fullName: fullname }
+        /*this.clients.forEach((c) => {
             if (c.id != clientId)
                 c.emit('receiveSignal', this.membersTyping)
-        })
+        })*/
+        client.to(channel.name).emit('receiveSignal', this.membersTyping)
 
     }
-    noticeThatAUserIsNotTypingAnymore(clientId: string): void {
-        delete this.membersTyping[clientId]
-
-        this.clients.forEach((c) => {
-            if (c.id != clientId)
-                c.emit('receiveSignal', this.membersTyping)
-        })
+    noticeThatAUserIsNotTypingAnymore(client: Socket, channel: ChannelI): void {
+        if (!this.membersTyping[channel.name])
+            this.membersTyping[channel.name] = {}
+        delete this.membersTyping[channel.name][client.id]
+        /*
+            this.clients.forEach((c) => {
+                if (c.id != clientId)
+                    c.emit('receiveSignal', this.membersTyping)
+            })*/
+        client.to(channel.name).emit('receiveSignal', this.membersTyping)
 
     }
 
