@@ -14,14 +14,14 @@ class UserChannel {
             )
         `
     }
-    static async create(userChannel: any) {
+    static async create(channelId: String, userId: String) {
 
         const result = await PostgresStore.pgPool.query({
             text: `INSERT INTO ${UserChannel.tableName}
                     (id_user, id_channel)
                     VALUES ($1, $2) RETURNING *`,
             values: [
-                userChannel.user, userChannel.channel
+                userId, channelId
             ]
         })
         return result.rows[0]
