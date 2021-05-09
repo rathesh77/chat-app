@@ -1,6 +1,7 @@
 import { MessageI } from '../entities/Message'
-import io from 'socket.io'
+import io, { Socket } from 'socket.io'
 import { SocketRepository } from '../repositories'
+import { ChannelI } from '../entities/Channel'
 
 export class SocketController {
     socketRepository: SocketRepository
@@ -13,10 +14,10 @@ export class SocketController {
     broadcastMessage(data: MessageI): void {
         this.socketRepository.broadcastMessage(data)
     }
-    noticeThatAUserIsTyping(clientId: string, fullname: string): void {
-        this.socketRepository.noticeThatAUserIsTyping(clientId, fullname)
+    noticeThatAUserIsTyping(client: Socket, fullname: string, channel: ChannelI): void {
+        this.socketRepository.noticeThatAUserIsTyping(client, fullname, channel)
     }
-    noticeThatAUserIsNotTypingAnymore(clientId: string): void {
-        this.socketRepository.noticeThatAUserIsNotTypingAnymore(clientId)
+    noticeThatAUserIsNotTypingAnymore(client: Socket, channel: ChannelI): void {
+        this.socketRepository.noticeThatAUserIsNotTypingAnymore(client, channel)
     }
 }

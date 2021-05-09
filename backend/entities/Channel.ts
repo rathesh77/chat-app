@@ -1,7 +1,12 @@
 import User from './User'
 import PostgresStore from '../PostgresStore'
 
-class Channel {
+export interface ChannelI {
+    id: string,
+    name: string,
+    author: string,
+}
+export class Channel {
     
 
 
@@ -54,5 +59,3 @@ class Channel {
 }
 
 Channel.tableName = 'Channel'
-
-export default Channel
