@@ -7,7 +7,7 @@ import cors from 'cors'
 import io from 'socket.io'
 import { SocketController } from './controllers'
 import { inMemorySocketRepository } from './infrastructure'
-import { MessageI } from './entities/Message'
+import { Message, MessageI } from './entities/Message'
 import session from 'express-session'
 import express from 'express'
 import cookieParser from 'cookie-parser'
@@ -17,7 +17,7 @@ import PostgresStore from './PostgresStore'
 import { hasToBeAuthenticated, mustNotBeAuthenticated } from './middlewares'
 import User from './entities/User'
 import UserChannel from './entities/UserChannel'
-import Channel from './entities/Channel'
+import { Channel, ChannelI } from './entities/Channel'
 
 let app = express()
 
@@ -56,6 +56,7 @@ socket.on('connection', async (client: io.Socket) => {
     socketController.onConnection(client)
 
     console.log(client.handshake.session);
+
     if (client.handshake.session?.user) {
         let currentUser = client.handshake.session.user
         // on recupere la liste des channels du client
@@ -64,7 +65,7 @@ socket.on('connection', async (client: io.Socket) => {
         for (let channel of userChannels) {
             client.join(`${channel.name}:${channel.author}`)
         }
-
+        client.emit('channelsList', userChannels)
     }
     client.on('message', async (data: MessageI) => {
         //client.handshake.session!.user = { user: "rathesh" }
@@ -73,14 +74,27 @@ socket.on('connection', async (client: io.Socket) => {
         //console.log(client.handshake.session?.user);
         //console.log(client.request.headers.cookie);
         //client.handshake.session?.save()
-        console.log(client.handshake.session?.id);
-        socketController.broadcastMessage(data)
+
+        let channel = data.channel
+        let message = data.content
+        console.log(channel);
+
+        // recuperer le channel où le msg est sur le point d'être envoyé
+        let currentChannel = await UserChannel.findByUserIdAndChannelId(client.handshake.session?.user?.id, channel.name.substring(channel.name.indexOf(':') + 1))
+        // tester si on est bien dans le channel 
+        if (!currentChannel) {
+            console.log('vous n"etes pas dans ce channel')
+            return
+        }
+        //socketController.broadcastMessage(data)
+        await Message.create(client.handshake.session?.user?.id, channel, message)
+        client.to(channel.name).emit('messageReceived', data)
     })
-    client.on('signal', async (fullName: string) => {
-        socketController.noticeThatAUserIsTyping(client.id, fullName)
+    client.on('signal', async (channel: ChannelI) => {
+        socketController.noticeThatAUserIsTyping(client, client.handshake.session?.user?.name, channel)
     })
-    client.on('userIsNotTypingAnymore', async () => {
-        socketController.noticeThatAUserIsNotTypingAnymore(client.id)
+    client.on('userIsNotTypingAnymore', async (channel: ChannelI) => {
+        socketController.noticeThatAUserIsNotTypingAnymore(client, channel)
     })
 
     client.on('disconnect', () => {
@@ -149,25 +163,25 @@ app.post('/login', mustNotBeAuthenticated, async function (req, res) {
 
 app.get('/logout', hasToBeAuthenticated, function (req, res) {
     req.session.destroy(() => { })
-    res.json({ message: 'Déconnecté' })
+    res.json({ message: 'disconnected' })
 })
 
 app.post('/channel', hasToBeAuthenticated, async function (req, res) {
     console.log(req.session);
-    
+
     let channelToCreate = await Channel.create(req.body.name, req.session.user?.id)
     await UserChannel.create(channelToCreate.id, req.session.user?.id)
     res.json(channelToCreate)
 })
 app.delete('/channel', async function (req, res) {
-    if (!req.body.channelName) {
+    if (!req.body.name) {
         res.status(401)
         res.send({
             message: 'no channel provided'
         })
         return
     }
-    let channelToDelete = await Channel.findByNameAndAuthor(req.body.channelName, req.session.user?.id)
+    let channelToDelete = await Channel.findByNameAndAuthor(req.body.name, req.session.user?.id)
     if (!channelToDelete) {
         res.status(401)
         res.send({
@@ -186,4 +200,9 @@ app.get('/channels', hasToBeAuthenticated, async function (req, res) {
 
     }
     res.send("channels")
+})
+
+app.get('/me', hasToBeAuthenticated, function (req, res) {
+
+    res.json(req.session.user)
 })

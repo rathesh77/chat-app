@@ -1,7 +1,8 @@
 import PostgresStore from '../PostgresStore'
 import User from './User'
-import Channel from './Channel'
+import {Channel} from './Channel'
 class UserChannel {
+
 
     static tableName: string
 
@@ -10,7 +11,8 @@ class UserChannel {
             CREATE TABLE ${UserChannel.tableName} (
                 id SERIAL PRIMARY KEY,
                 id_user INTEGER REFERENCES ${User.tableName}(id) ON DELETE CASCADE,
-                id_channel INTEGER REFERENCES ${Channel.tableName}(id) ON DELETE CASCADE
+                id_channel INTEGER REFERENCES ${Channel.tableName}(id) ON DELETE CASCADE,
+                UNIQUE (id_user, id_channel)
             )
         `
     }
@@ -41,6 +43,17 @@ class UserChannel {
         return result.rows
     }
 
+    static async findByUserIdAndChannelId(userId: any, channelId: string) {
+        const result = await PostgresStore.pgPool.query({
+            text: `SELECT * FROM ${UserChannel.tableName}
+                    where id_user = $1 and id_channel = $2
+                   `,
+            values: [
+                userId, channelId
+            ]
+        })
+        return result.rows[0]
+    }
 }
 
 UserChannel.tableName = 'UserChannel'
