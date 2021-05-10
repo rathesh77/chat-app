@@ -1,6 +1,7 @@
 import PostgresStore from '../PostgresStore'
 import User from './User'
-import {Channel} from './Channel'
+import { Channel } from './Channel'
+import { Message } from './Message'
 class UserChannel {
 
 
@@ -32,9 +33,17 @@ class UserChannel {
 
     static async findByUserId(clientId: Number) {
         const result = await PostgresStore.pgPool.query({
-            text: `SELECT c.name, c.author FROM ${UserChannel.tableName} as us INNER JOIN ${Channel.tableName} as c
+            text: /*`SELECT c.name, c.author FROM ${UserChannel.tableName} as us INNER JOIN ${Channel.tableName} as c
                    ON us.id_channel = c.id
                    and us.id_user = $1
+                `*/
+                ` SELECT c.name, c.author as channel_author,u.name as  message_author_name , m.content, m.id_client as message_author
+
+                    FROM ${UserChannel.tableName} as uc 
+                    INNER JOIN ${Channel.tableName} as c ON uc.id_channel = c.id
+                    INNER JOIN ${Message.tableName} as m on c.id = m.id_channel 
+                    INNER JOIN ${User.tableName} as u on m.id_client = u.id
+                    and uc.id_user = $1;
                    `,
             values: [
                 clientId
