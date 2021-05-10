@@ -62,9 +62,15 @@ socket.on('connection', async (client: io.Socket) => {
         // on recupere la liste des channels du client
         let userChannels = await UserChannel.findByUserId(currentUser.id)
         // le client rejoint tous les channels où il est
+        let previousRoom = null
         for (let channel of userChannels) {
-            client.join(`${channel.name}:${channel.author}`)
+            if ( previousRoom != `${channel.name}:${channel.channel_author}`){
+                client.join(`${channel.name}:${channel.channel_author}`)
+                previousRoom = `${channel.name}:${channel.channel_author}`
+            }
+
         }
+        
         client.emit('channelsList', userChannels)
     }
     client.on('message', async (data: MessageI) => {
@@ -78,7 +84,7 @@ socket.on('connection', async (client: io.Socket) => {
         let channel = data.channel
         let message = data.content
         console.log(channel);
-
+        
         // recuperer le channel où le msg est sur le point d'être envoyé
         let currentChannel = await UserChannel.findByUserIdAndChannelId(client.handshake.session?.user?.id, channel.name.substring(channel.name.indexOf(':') + 1))
         // tester si on est bien dans le channel 
@@ -88,7 +94,7 @@ socket.on('connection', async (client: io.Socket) => {
         }
         //socketController.broadcastMessage(data)
         await Message.create(client.handshake.session?.user?.id, channel, message)
-        client.to(channel.name).emit('messageReceived', data)
+        socket.to(`${channel.name}`).emit('messageReceived', data)
     })
     client.on('signal', async (channel: ChannelI) => {
         socketController.noticeThatAUserIsTyping(client, client.handshake.session?.user?.name, channel)

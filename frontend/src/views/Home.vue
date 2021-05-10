@@ -2,9 +2,9 @@
   <div id="app">
     <div id="notification">Connected successfully to the server</div>
     <div id="channels">
-     
-
-      <div v-for="(value, name) in channels" v-bind:key="value.author">{{ name }}</div>
+      <div v-for="(value, name) in channels" v-bind:key="value.author">
+        {{ name }}
+      </div>
     </div>
     <div id="chatRoomContainer">
       <div id="details">
@@ -13,34 +13,47 @@
       </div>
 
       <div id="chatMessagesContainer">
-        <div
-          v-for="(message, index) in messages"
-          v-bind:key="index"
-          class="messageContainer"
-        >
-          <div v-if="message.id === id" class="sourceMessages">
-            <div
-              v-if="
-                !messages[messages.indexOf(message) - 1] ||
-                messages[messages.indexOf(message) - 1].id !== id
-              "
-              class="author"
-            >
-              {{ message.fullName }}
+        <div v-if="Object.keys(channels).length > 0">
+          <div
+            v-for="(message, index) in channels[
+              Object.keys(channels)[selectedChannel]
+            ]"
+            v-bind:key="index"
+            class="messageContainer"
+          >
+            <div v-if="message.authorId === user.id" class="sourceMessages">
+              <div
+                v-if="
+                  !channels[Object.keys(channels)[selectedChannel]][
+                    channels[Object.keys(channels)[selectedChannel]].indexOf(
+                      message
+                    ) - 1
+                  ] ||
+                  channels[Object.keys(channels)[selectedChannel]][
+                    channels[Object.keys(channels)[selectedChannel]].indexOf(
+                      message
+                    ) - 1
+                  ].authorId !== user.id
+                "
+                class="author"
+              >
+                {{ message.authorName }}
+              </div>
+              <div class="messageContent grayed">{{ message.content }}</div>
             </div>
-            <div class="messageContent grayed">{{ message.content }}</div>
-          </div>
-          <div v-else class="destinationMessages">
-            <div
-              v-if="
-                !messages[messages.indexOf(message) - 1] ||
-                messages[messages.indexOf(message) - 1].id !== message.id
-              "
-              class="author"
-            >
-              {{ message.fullName }}
+            <div v-else class="destinationMessages">
+              <div
+                v-if="
+                  !messages[messages.indexOf(message) - 1] ||
+                  messages[messages.indexOf(message) - 1].authorId !==
+                    message.authorId
+                "
+                class="author"
+              >
+                {{ message.channel_author_name }}
+              </div>
+              <div class="messageContent">{{ message.content }}</div>
             </div>
-            <div class="messageContent">{{ message.content }}</div>
           </div>
         </div>
       </div>
@@ -76,9 +89,10 @@ export default {
       message: "",
       messages: [],
       channels: {},
+      selectedChannel: 0,
     };
   },
-  async mounted() {
+  async created() {
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
@@ -107,10 +121,12 @@ export default {
         channel: {
           id: "1",
           name: "test:1",
-          author: "1",
+          author: this.user.id,
         },
       });
+      
       this.message = "";
+
       document.getElementsByTagName("input")[0].focus();
     },
 
@@ -124,31 +140,42 @@ export default {
   sockets: {
     channelsList(userChannels) {
       for (let channel of userChannels) {
-        
-        this.channels[channel.name] = [];
-        console.log(this.channels);
+        if (!this.channels[`${channel.name}:${channel.channel_author}`])
+          this.channels[`${channel.name}:${channel.channel_author}`] = [];
+        else
+          this.channels[`${channel.name}:${channel.channel_author}`].push({
+            content: channel.content,
+            authorId: channel.message_author,
+            authorName: channel.message_author_name,
+          });
       }
+      console.log(this.channels);
+      this.$forceUpdate();
     },
     messageReceived(data) {
+      console.log("RECEIIIIIIVED");
       let container = document.getElementById("chatMessagesContainer");
       if (!container) return;
-      const { fullName, content, id } = data;
-      this.messages = [
-        ...this.messages,
+      console.log(data);
+
+      this.channels[Object.keys(this.channels)[this.selectedChannel]] = [
+        ...this.channels[Object.keys(this.channels)[this.selectedChannel]],
         {
-          fullName,
-          content,
-          id,
+          authorId: this.user.id,
+          content: data.content,
+          authorName: this.user.name,
         },
       ];
       setTimeout(() => {
         container.scrollTop = container.scrollHeight - container.clientHeight;
       }, 100);
+      this.$forceUpdate();
     },
     sendId(data) {
       this.id = data;
     },
     receiveSignal(data) {
+      console.log("wes");
       let userIsTyping = document.getElementById("userIsTyping");
       if (!userIsTyping) return;
       let clone = data;
