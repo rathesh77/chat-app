@@ -1,7 +1,7 @@
 import PostgresStore from './PostgresStore'
 import Session from './entities/Session'
 import User from './entities/User'
-import Channel from './entities/Channel'
+import {Channel} from './entities/Channel'
 import { Message } from './entities/Message'
 import UserChannel from './entities/UserChannel'
 
