@@ -13,6 +13,14 @@ export default [
         path: "/",
         name: "Home",
         component: () => import('../views/Home.vue'),
+        async beforeEnter(to, from, next) {
+            let isAuth = await isAuthenticated();
+            if (!isAuth) {
+                next({ path: "/login" });
+            } else {
+                next();
+            }
+        },
     },
     {
         path: "/login",
