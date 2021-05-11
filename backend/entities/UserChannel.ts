@@ -30,14 +30,14 @@ class UserChannel {
         return result.rows[0]
     }
 
-
+    // recuperer tous les messages dans les channels où l'utilisateur se trouve
     static async findByUserId(clientId: Number) {
         const result = await PostgresStore.pgPool.query({
             text: /*`SELECT c.name, c.author FROM ${UserChannel.tableName} as us INNER JOIN ${Channel.tableName} as c
                    ON us.id_channel = c.id
                    and us.id_user = $1
                 `*/
-                ` SELECT c.name, c.author as channel_author,u.name as  message_author_name , m.content, m.id_client as message_author
+                `SELECT c.id as channel_id, c.name, c.author as channel_author,u.name as  message_author_name , m.content, m.id_client as message_author
 
                     FROM ${UserChannel.tableName} as uc 
                     LEFT JOIN ${Channel.tableName} as c ON uc.id_channel = c.id
