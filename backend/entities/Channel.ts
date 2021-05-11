@@ -17,7 +17,7 @@ export class Channel {
             CREATE TABLE ${Channel.tableName} (
                 id SERIAL PRIMARY KEY,
                 name TEXT,
-                author INTEGER REFERENCES ${User.tableName}(id)
+                author INTEGER REFERENCES ${User.tableName}(id) ON DELETE CASCADE
             )
         `
     }
