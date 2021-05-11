@@ -4,7 +4,7 @@ import User from './User'
 import PostgresStore from '../PostgresStore'
 
 export interface MessageI {
-    id: string,
+    authorId: string,
     fullName: string,
     content: string,
     channel: ChannelI // name:authorId
@@ -20,8 +20,8 @@ export class Message {
             CREATE TABLE ${Message.tableName} (
                 id SERIAL PRIMARY KEY,
                 content TEXT,
-                id_channel INTEGER REFERENCES ${Channel.tableName}(id),
-                id_client INTEGER REFERENCES ${User.tableName}(id),
+                id_channel INTEGER REFERENCES ${Channel.tableName}(id) ON DELETE CASCADE,
+                id_client INTEGER REFERENCES ${User.tableName}(id) ON DELETE CASCADE,
                 creation_date TIMESTAMPTZ
             )
         `
