@@ -52,9 +52,16 @@
             <div v-else class="destinationMessages">
               <div
                 v-if="
-                  !messages[messages.indexOf(message) - 1] ||
-                  messages[messages.indexOf(message) - 1].authorId !==
-                    message.authorId
+                  !channels[Object.keys(channels)[selectedChannel]][
+                    channels[Object.keys(channels)[selectedChannel]].indexOf(
+                      message
+                    ) - 1
+                  ] ||
+                  channels[Object.keys(channels)[selectedChannel]][
+                    channels[Object.keys(channels)[selectedChannel]].indexOf(
+                      message
+                    ) - 1
+                  ].authorId !== user.id
                 "
                 class="author"
               >
@@ -130,17 +137,19 @@ export default {
       //console.log((response.data))
       this.$socket.emit('createChannel', this.channelName)
       this.channels[`${this.channelName}:${this.user.id}`] = []
+      
       this.$forceUpdate()
+      //this.selectedChannel = Object.keys.length-1
     },
     onSend() {
+    //console.log("index", this.channels[Object.keys(this.channels)[this.selectedChannel]])
       if (this.message.length === 0 || /^ *$/.test(this.message)) return;
       this.$socket.emit("message", {
         fullName: this.user.name,
         content: this.message,
         id: this.id,
         channel: {
-          id: "1",
-          name: "test:1",
+          name: Object.keys(this.channels)[this.selectedChannel],
           author: this.user.id,
         },
       });
@@ -149,7 +158,7 @@ export default {
 
       document.getElementsByTagName("input")[0].focus();
     },
-
+    
     sendSignal() {
       this.$socket.emit("signal", this.user.name);
     },
@@ -159,12 +168,12 @@ export default {
   },
   sockets: {
     async channelsList(userChannels) {
-      
       this.user = await axios.get("/me");
     this.user = this.user.data;
       for (let channel of userChannels) {
         if (!this.channels[`${channel.name}:${channel.channel_author}`]){
           this.channels[`${channel.name}:${channel.channel_author}`] = [{
+            channelId: channel.channel_id,
             content: channel.content,
             authorId: channel.message_author,
             authorName: channel.message_author_name,
@@ -172,6 +181,7 @@ export default {
         }
         else
           this.channels[`${channel.name}:${channel.channel_author}`].push({
+            channelId: channel.channel_id,
             content: channel.content,
             authorId: channel.message_author,
             authorName: channel.message_author_name,
