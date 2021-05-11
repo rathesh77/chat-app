@@ -2,17 +2,15 @@
   <div id="app">
     <div id="notification">Connected successfully to the server</div>
     <div id="channels">
-    <div id="create-channel">
-      <input type="text" id="channel-name" v-model="channelName"/>
-      <button type="button" v-on:click="createChannel">Create channel</button>
-      
-    </div>
-    <div id="channels-list">
-      <div v-for="(value, name, index) in channels" v-bind:key="value.author">
-        <li v-on:click="switchChannel(index)">{{name}}</li>
+      <div id="create-channel">
+        <input type="text" id="channel-name" v-model="channelName" />
+        <button type="button" v-on:click="createChannel">Create channel</button>
       </div>
-    </div>
-
+      <div id="channels-list">
+        <div v-for="(value, name, index) in channels" v-bind:key="value.author">
+          <li v-on:click="switchChannel(index)">{{ name.substring(0,name.indexOf(':')) }}</li>
+        </div>
+      </div>
     </div>
     <div id="chatRoomContainer">
       <div id="details">
@@ -29,21 +27,20 @@
             v-bind:key="index"
             class="messageContainer"
           >
-            <div v-if="message.authorId === user.id && message.content != null" class="sourceMessages">
-              <div
-
-                class="author"
-              >
+            <div
+              v-if="message.authorId === user.id && message.content != null"
+              class="sourceMessages"
+            >
+              <div class="author">
                 {{ message.authorName }}
               </div>
               <div class="messageContent grayed">{{ message.content }}</div>
             </div>
-            <div v-else-if="message.content != null" class="destinationMessages">
-
-              <div
-                
-                class="author"
-              >
+            <div
+              v-else-if="message.content != null"
+              class="destinationMessages"
+            >
+              <div class="author">
                 {{ message.authorName }}
               </div>
               <div class="messageContent">{{ message.content }}</div>
@@ -51,11 +48,11 @@
           </div>
         </div>
       </div>
-      <div id="userIsTyping"></div>
+      <div id="userIsTyping">{{typingUsersNotification}}</div>
       <input
         type="text"
         v-model="message"
-        @focus="sendSignal"
+        @focus="userIsTyping"
         v-on:blur="userIsNotTypingAnymore"
       />
       <button id="sendMessageButton" v-on:click="onSend()">Send</button>
@@ -82,11 +79,13 @@ export default {
       message: "",
       channels: {},
       selectedChannel: 0,
-      channelName: ""
+      channelName: "",
+      typingUsers: {},
+      typingUsersNotification: ''
     };
   },
   async created() {
-    console.log('created')
+    console.log("created");
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
@@ -102,104 +101,141 @@ export default {
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
     });
-
   },
 
   methods: {
-    switchChannel(index){
-      this.selectedChannel = index 
+    switchChannel(index) {
+      this.selectedChannel = index;
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      if (!this.typingUsers[currentSelectedChannelName]) return;
+      if (this.typingUsers[currentSelectedChannelName].length > 1) {
+        this.typingUsersNotification = "Many users are typing...";
+      } else if (this.typingUsers[currentSelectedChannelName].length == 1) {
+        this.typingUsersNotification = `${this.typingUsers[currentSelectedChannelName][0].user.name} is typing`;
+      } else {
+        this.typingUsersNotification = "";
+      }
     },
-    async createChannel(){
-      //let response = await axios.post('/channel',{name: this.channelName})
-      //console.log((response.data))
-      this.$socket.emit('createChannel', this.channelName)
-      this.channels[`${this.channelName}:${this.user.id}`] = []
+    async createChannel() {
       
-      this.$forceUpdate()
-      //this.selectedChannel = Object.keys.length-1
+      this.$socket.emit("createChannel", this.channelName);
+      this.channels[`${this.channelName}:${this.user.id}`] = [];
+
+      this.$forceUpdate();
     },
     onSend() {
-      let channelName = Object.keys(this.channels)[this.selectedChannel]
-    //console.log("index", this.channels[Object.keys(this.channels)[this.selectedChannel]])
+      let channelName = Object.keys(this.channels)[this.selectedChannel];
       if (this.message.length === 0 || /^ *$/.test(this.message)) return;
       this.$socket.emit("message", {
-        authorId:this.user.id,
+        authorId: this.user.id,
         fullName: this.user.name,
         content: this.message,
         channel: {
           name: channelName,
-          author: channelName.substring(channelName.indexOf(':')+1),
+          author: channelName.substring(channelName.indexOf(":") + 1),
         },
       });
-      
+
       this.message = "";
 
       document.getElementsByTagName("input")[0].focus();
-      console.log('envoyé')
     },
-    
-    sendSignal() {
-      this.$socket.emit("signal", this.user.name);
+
+    userIsTyping() {
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      this.$socket.emit("userIsTyping", currentSelectedChannelName);
     },
     userIsNotTypingAnymore() {
-      this.$socket.emit("userIsNotTypingAnymore", this.user.name);
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      this.$socket.emit("userIsNotTypingAnymore", currentSelectedChannelName);
     },
   },
   sockets: {
     async channelsList(userChannels) {
       this.user = await axios.get("/me");
-    this.user = this.user.data;
+      this.user = this.user.data;
       for (let channel of userChannels) {
-        if (!this.channels[`${channel.channel_name}:${channel.channel_author_id}`]){
-          this.channels[`${channel.channel_name}:${channel.channel_author_id}`] = [{
-            //channelId: channel.channel_id,
-            content: channel.content,
-            authorId: channel.message_author_id,
-            authorName: channel.message_author_name,
-          }];
-        }
-        else
-          this.channels[`${channel.channel_name}:${channel.channel_author_id}`].push({
+        if (
+          !this.channels[`${channel.channel_name}:${channel.channel_author_id}`]
+        ) {
+          this.channels[
+            `${channel.channel_name}:${channel.channel_author_id}`
+          ] = [
+            {
+              //channelId: channel.channel_id,
+              content: channel.content,
+              authorId: channel.message_author_id,
+              authorName: channel.message_author_name,
+            },
+          ];
+        } else
+          this.channels[
+            `${channel.channel_name}:${channel.channel_author_id}`
+          ].push({
             //channelId: channel.channel_id,
             content: channel.content,
             authorId: channel.message_author_id,
             authorName: channel.message_author_name,
           });
       }
-      
+
       this.$forceUpdate();
-      console.log("channels",this.channels);
     },
     messageReceived(data) {
-      console.log("message received", data);
       let container = document.getElementById("chatMessagesContainer");
       if (!container) return;
-      console.log(data)
-      this.channels[data.channel.name].push(
-        {
-          authorId:data.authorId,
-          content: data.content,
-          authorName: data.fullName,
-        }),
-      
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight - container.clientHeight;
-      }, 100);
+      this.channels[data.channel.name].push({
+        authorId: data.authorId,
+        content: data.content,
+        authorName: data.fullName,
+      }),
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight - container.clientHeight;
+        }, 100);
       this.$forceUpdate();
     },
-    
-    receiveSignal(data) {
-      let userIsTyping = document.getElementById("userIsTyping");
-      if (!userIsTyping) return;
-      let clone = data;
-      delete clone[this.$socket.id];
-      if (Object.keys(clone).length > 1) {
-        userIsTyping.innerHTML = "Many users are typing...";
-      } else if (clone[Object.keys(clone)[0]]) {
-        userIsTyping.innerHTML =
-          clone[Object.keys(clone)[0]].fullName + " is typing...";
+
+    userIsTyping({ channelName, user }) {
+
+      if (!this.typingUsers[channelName]) {
+        this.typingUsers[channelName] = [];
+      }
+      this.typingUsers[channelName].push(user);
+
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      if (currentSelectedChannelName != channelName) return;
+      if (this.typingUsers[channelName].length > 1) {
+        this.typingUsersNotification = "Many users are typing...";
       } else {
-        userIsTyping.innerHTML = "";
+        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing`;
+      }
+    },
+    userIsNotTypingAnymore({ channelName, user }) {
+
+      for (let i = 0; i < this.typingUsers[channelName].length; i++) {
+        if (user.id == this.typingUsers[channelName][i].id) {
+          this.typingUsers[channelName].splice(i, 1);
+          break;
+        }
+      }
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      if (currentSelectedChannelName != channelName) return;
+      if (this.typingUsers[channelName].length > 1) {
+        this.typingUsersNotification = "Many users are typing...";
+      } else if (this.typingUsers[channelName].length == 1) {
+        this.typingUsersNotification = `${this.typingUsers[channelName][0].user.name} is typing`;
+      } else {
+        this.typingUsersNotification = "";
       }
     },
   },
