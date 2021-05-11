@@ -52,7 +52,6 @@ socket.use(sharedSession(sessionMiddleware, { autoSave: true }));
 const socketController: SocketController = new SocketController(new inMemorySocketRepository())
 
 socket.on('connection', async (client: io.Socket) => {
-    client.emit('sendId', client.id)
     socketController.onConnection(client)
 
     console.log(client.handshake.session);
@@ -64,13 +63,12 @@ socket.on('connection', async (client: io.Socket) => {
         // le client rejoint tous les channels où il est
         let previousRoom = null
         for (let channel of userChannels) {
-            if ( previousRoom != `${channel.name}:${channel.channel_author}`){
-                client.join(`${channel.name}:${channel.channel_author}`)
-                previousRoom = `${channel.name}:${channel.channel_author}`
+            if ( previousRoom != `${channel.channel_name}:${channel.channel_author_id}`){
+                client.join(`${channel.channel_name}:${channel.channel_author_id}`)
+                previousRoom = `${channel.channel_name}:${channel.channel_author_id}`
             }
 
         }
-        console.log(userChannels);
         
         client.emit('channelsList', userChannels)
     }
@@ -94,11 +92,11 @@ socket.on('connection', async (client: io.Socket) => {
             return
         }
         let currentChannelId= await Channel.findByNameAndAuthor(channel.name.substring(0, channel.name.indexOf(':')), channel.author);
-        console.log(currentChannelId);
         
         channel.id = currentChannelId.id
         //socketController.broadcastMessage(data)
         await Message.create(client.handshake.session?.user?.id, channel, message)
+        console.log(data)
         socket.to(`${channel.name}`).emit('messageReceived', data)
     })
     client.on('createChannel', async (channelName: string) => {
