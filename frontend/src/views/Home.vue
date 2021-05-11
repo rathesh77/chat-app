@@ -233,7 +233,7 @@ export default {
       if (this.typingUsers[channelName].length > 1) {
         this.typingUsersNotification = "Many users are typing...";
       } else if (this.typingUsers[channelName].length == 1) {
-        this.typingUsersNotification = `${this.typingUsers[channelName][0].user.name} is typing`;
+        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing`;
       } else {
         this.typingUsersNotification = "";
       }
