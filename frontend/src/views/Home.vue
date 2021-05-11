@@ -29,43 +29,22 @@
             v-bind:key="index"
             class="messageContainer"
           >
-            <div v-if="message.authorId === user.id" class="sourceMessages">
+            <div v-if="message.authorId === user.id && message.content != null" class="sourceMessages">
               <div
-                v-if="
-                  !channels[Object.keys(channels)[selectedChannel]][
-                    channels[Object.keys(channels)[selectedChannel]].indexOf(
-                      message
-                    ) - 1
-                  ] ||
-                  channels[Object.keys(channels)[selectedChannel]][
-                    channels[Object.keys(channels)[selectedChannel]].indexOf(
-                      message
-                    ) - 1
-                  ].authorId !== user.id
-                "
+
                 class="author"
               >
                 {{ message.authorName }}
               </div>
               <div class="messageContent grayed">{{ message.content }}</div>
             </div>
-            <div v-else class="destinationMessages">
+            <div v-else-if="message.content != null" class="destinationMessages">
+
               <div
-                v-if="
-                  !channels[Object.keys(channels)[selectedChannel]][
-                    channels[Object.keys(channels)[selectedChannel]].indexOf(
-                      message
-                    ) - 1
-                  ] ||
-                  channels[Object.keys(channels)[selectedChannel]][
-                    channels[Object.keys(channels)[selectedChannel]].indexOf(
-                      message
-                    ) - 1
-                  ].authorId !== user.id
-                "
+                
                 class="author"
               >
-                {{ message.channel_author_name }}
+                {{ message.authorName }}
               </div>
               <div class="messageContent">{{ message.content }}</div>
             </div>
@@ -100,9 +79,7 @@ export default {
   data() {
     return {
       user: null,
-      id: null,
       message: "",
-      messages: [],
       channels: {},
       selectedChannel: 0,
       channelName: ""
@@ -142,21 +119,23 @@ export default {
       //this.selectedChannel = Object.keys.length-1
     },
     onSend() {
+      let channelName = Object.keys(this.channels)[this.selectedChannel]
     //console.log("index", this.channels[Object.keys(this.channels)[this.selectedChannel]])
       if (this.message.length === 0 || /^ *$/.test(this.message)) return;
       this.$socket.emit("message", {
+        authorId:this.user.id,
         fullName: this.user.name,
         content: this.message,
-        id: this.id,
         channel: {
-          name: Object.keys(this.channels)[this.selectedChannel],
-          author: this.user.id,
+          name: channelName,
+          author: channelName.substring(channelName.indexOf(':')+1),
         },
       });
       
       this.message = "";
 
       document.getElementsByTagName("input")[0].focus();
+      console.log('envoyé')
     },
     
     sendSignal() {
@@ -171,47 +150,44 @@ export default {
       this.user = await axios.get("/me");
     this.user = this.user.data;
       for (let channel of userChannels) {
-        if (!this.channels[`${channel.name}:${channel.channel_author}`]){
-          this.channels[`${channel.name}:${channel.channel_author}`] = [{
-            channelId: channel.channel_id,
+        if (!this.channels[`${channel.channel_name}:${channel.channel_author_id}`]){
+          this.channels[`${channel.channel_name}:${channel.channel_author_id}`] = [{
+            //channelId: channel.channel_id,
             content: channel.content,
-            authorId: channel.message_author,
+            authorId: channel.message_author_id,
             authorName: channel.message_author_name,
           }];
         }
         else
-          this.channels[`${channel.name}:${channel.channel_author}`].push({
-            channelId: channel.channel_id,
+          this.channels[`${channel.channel_name}:${channel.channel_author_id}`].push({
+            //channelId: channel.channel_id,
             content: channel.content,
-            authorId: channel.message_author,
+            authorId: channel.message_author_id,
             authorName: channel.message_author_name,
           });
       }
       
       this.$forceUpdate();
-      console.log("channel",this.channels);
+      console.log("channels",this.channels);
     },
     messageReceived(data) {
-      console.log("message received");
+      console.log("message received", data);
       let container = document.getElementById("chatMessagesContainer");
       if (!container) return;
-
-      this.channels[Object.keys(this.channels)[this.selectedChannel]] = [
-        ...this.channels[Object.keys(this.channels)[this.selectedChannel]],
+      console.log(data)
+      this.channels[data.channel.name].push(
         {
-          authorId: this.user.id,
+          authorId:data.authorId,
           content: data.content,
-          authorName: this.user.name,
-        },
-      ];
+          authorName: data.fullName,
+        }),
+      
       setTimeout(() => {
         container.scrollTop = container.scrollHeight - container.clientHeight;
       }, 100);
       this.$forceUpdate();
     },
-    sendId(data) {
-      this.id = data;
-    },
+    
     receiveSignal(data) {
       let userIsTyping = document.getElementById("userIsTyping");
       if (!userIsTyping) return;
