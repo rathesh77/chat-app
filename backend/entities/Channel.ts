@@ -22,7 +22,7 @@ export class Channel {
         `
     }
 
-    static async findByNameAndAuthor(channelName: String, id: any) {
+    static async findByNameAndAuthor(channelName: String, id: any): Promise<ChannelI> {
         const result = await PostgresStore.pgPool.query({
             text: `SELECT * from ${Channel.tableName} 
                     where name = $1
