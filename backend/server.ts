@@ -93,6 +93,10 @@ socket.on('connection', async (client: io.Socket) => {
             console.log('vous n"etes pas dans ce channel')
             return
         }
+        let currentChannelId= await Channel.findByNameAndAuthor(channel.name.substring(0, channel.name.indexOf(':')), channel.author);
+        console.log(currentChannelId);
+        
+        channel.id = currentChannelId.id
         //socketController.broadcastMessage(data)
         await Message.create(client.handshake.session?.user?.id, channel, message)
         socket.to(`${channel.name}`).emit('messageReceived', data)
@@ -101,7 +105,7 @@ socket.on('connection', async (client: io.Socket) => {
         //socketController.noticeThatAUserIsTyping(client, client.handshake.session?.user?.name, channel)
         const userId = client.handshake.session?.user?.id
         let channelToCreate = await Channel.create(channelName, userId)
-        await UserChannel.create(channelToCreate.id, userId)
+       let response =  await UserChannel.create(channelToCreate.id, userId)
         client.join(`${channelName}:${userId}`)
 
     })
