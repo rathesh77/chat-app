@@ -2,9 +2,17 @@
   <div id="app">
     <div id="notification">Connected successfully to the server</div>
     <div id="channels">
-      <div v-for="(value, name) in channels" v-bind:key="value.author">
-        {{ name }}
+    <div id="create-channel">
+      <input type="text" id="channel-name" v-model="channelName"/>
+      <button type="button" v-on:click="createChannel">Create channel</button>
+      
+    </div>
+    <div id="channels-list">
+      <div v-for="(value, name, index) in channels" v-bind:key="value.author">
+        <li v-on:click="switchChannel(index)">{{name}}</li>
       </div>
+    </div>
+
     </div>
     <div id="chatRoomContainer">
       <div id="details">
@@ -90,13 +98,14 @@ export default {
       messages: [],
       channels: {},
       selectedChannel: 0,
+      channelName: ""
     };
   },
   async created() {
+    console.log('created')
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
-    console.log(this.user);
     this.$socket.on("connect_error", function () {
       let notification = document.getElementById("notification");
 
@@ -109,9 +118,20 @@ export default {
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
     });
+
   },
 
   methods: {
+    switchChannel(index){
+      this.selectedChannel = index 
+    },
+    async createChannel(){
+      //let response = await axios.post('/channel',{name: this.channelName})
+      //console.log((response.data))
+      this.$socket.emit('createChannel', this.channelName)
+      this.channels[`${this.channelName}:${this.user.id}`] = []
+      this.$forceUpdate()
+    },
     onSend() {
       if (this.message.length === 0 || /^ *$/.test(this.message)) return;
       this.$socket.emit("message", {
@@ -138,10 +158,18 @@ export default {
     },
   },
   sockets: {
-    channelsList(userChannels) {
+    async channelsList(userChannels) {
+      
+      this.user = await axios.get("/me");
+    this.user = this.user.data;
       for (let channel of userChannels) {
-        if (!this.channels[`${channel.name}:${channel.channel_author}`])
-          this.channels[`${channel.name}:${channel.channel_author}`] = [];
+        if (!this.channels[`${channel.name}:${channel.channel_author}`]){
+          this.channels[`${channel.name}:${channel.channel_author}`] = [{
+            content: channel.content,
+            authorId: channel.message_author,
+            authorName: channel.message_author_name,
+          }];
+        }
         else
           this.channels[`${channel.name}:${channel.channel_author}`].push({
             content: channel.content,
@@ -149,14 +177,14 @@ export default {
             authorName: channel.message_author_name,
           });
       }
-      console.log(this.channels);
+      
       this.$forceUpdate();
+      console.log("channel",this.channels);
     },
     messageReceived(data) {
-      console.log("RECEIIIIIIVED");
+      console.log("message received");
       let container = document.getElementById("chatMessagesContainer");
       if (!container) return;
-      console.log(data);
 
       this.channels[Object.keys(this.channels)[this.selectedChannel]] = [
         ...this.channels[Object.keys(this.channels)[this.selectedChannel]],
@@ -175,7 +203,6 @@ export default {
       this.id = data;
     },
     receiveSignal(data) {
-      console.log("wes");
       let userIsTyping = document.getElementById("userIsTyping");
       if (!userIsTyping) return;
       let clone = data;

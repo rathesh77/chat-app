@@ -40,9 +40,9 @@ class UserChannel {
                 ` SELECT c.name, c.author as channel_author,u.name as  message_author_name , m.content, m.id_client as message_author
 
                     FROM ${UserChannel.tableName} as uc 
-                    INNER JOIN ${Channel.tableName} as c ON uc.id_channel = c.id
-                    INNER JOIN ${Message.tableName} as m on c.id = m.id_channel 
-                    INNER JOIN ${User.tableName} as u on m.id_client = u.id
+                    LEFT JOIN ${Channel.tableName} as c ON uc.id_channel = c.id
+                    LEFT JOIN ${Message.tableName} as m on c.id = m.id_channel 
+                    LEFT JOIN ${User.tableName} as u on m.id_client = u.id
                     and uc.id_user = $1;
                    `,
             values: [
