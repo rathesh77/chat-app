@@ -4,6 +4,7 @@ import User from './entities/User'
 import {Channel} from './entities/Channel'
 import { Message } from './entities/Message'
 import UserChannel from './entities/UserChannel'
+import { Invitation } from './entities/Invitation'
 
 async function dropTables() {
     const result = await PostgresStore.pgPool.query(
@@ -17,7 +18,7 @@ async function dropTables() {
 }
 
 async function createTables() {
-    for (let table of [Session, User, Channel, UserChannel, Message])
+    for (let table of [Session, User, Channel,Invitation, UserChannel, Message])
         await PostgresStore.pgPool.query(table.toSQLTable())
 }
 
