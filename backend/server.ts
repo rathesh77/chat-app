@@ -12,11 +12,11 @@ import cookieParser from 'cookie-parser'
 import sharedSession from 'express-socket.io-session'
 import connectPgSession from 'connect-pg-simple'
 import PostgresStore from './PostgresStore'
-import { hasToBeAuthenticated, mustNotBeAuthenticated } from './middlewares'
 import User from './entities/User'
 import UserChannel from './entities/UserChannel'
-import { Channel, ChannelI } from './entities/Channel'
+import { Channel } from './entities/Channel'
 
+import {authRouter, channelRouter, invitationRouter} from './routes'
 let app = express()
 
 PostgresStore.init()
@@ -42,11 +42,21 @@ app.use(cors({
     origin: 'http://localhost:8080'
 }))
 app.use(express.urlencoded())
-app.use(express.json());
+app.use(express.json())
+app.use('/', authRouter)
+app.use('/', channelRouter)
+app.use('/', invitationRouter)
+
 const socket: io.Server = io(server, { origins: '*:*' })
 
 socket.use(sharedSession(sessionMiddleware, { autoSave: true }));
-
+socket.use((socket, next) => {
+    if (socket.handshake.session?.user) {
+      next();
+    } else {
+      next(new Error("invalid"));
+    }
+  });
 
 socket.on('connection', async (client: io.Socket) => {
     console.log("A new client is connected", client.id)
@@ -58,9 +68,10 @@ socket.on('connection', async (client: io.Socket) => {
         // le client rejoint tous les channels où il etait precedemment
         let previousRoom = null
         for (let channel of userChannels) {
-            if (previousRoom != `${channel.channel_name}:${channel.channel_author_id}`) {
-                client.join(`${channel.channel_name}:${channel.channel_author_id}`)
-                previousRoom = `${channel.channel_name}:${channel.channel_author_id}`
+            const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
+            if (previousRoom != currentChannelName) {
+                client.join(currentChannelName)
+                previousRoom = currentChannelName
             }
 
         }
@@ -84,12 +95,16 @@ socket.on('connection', async (client: io.Socket) => {
         await Message.create(client.handshake.session?.user?.id, channel, message)
         socket.to(`${channel.name}`).emit('messageReceived', data)
     })
-    client.on('createChannel', async (channelName: string) => {
-        const userId = client.handshake.session?.user?.id
-        let channelToCreate = await Channel.create(channelName, userId)
-        await UserChannel.create(channelToCreate.id, userId)
-        client.join(`${channelName}:${userId}`)
+    client.on('invitation', async (data: any) => {
+        const {channelId, recipient}= data
+        await UserChannel.create(channelId, (await User.findByEmail(recipient)).id)       
+        //client.join(`${channelName}:${userId}`)
+        socket.emit('invitation', data)
 
+    })
+    client.on('joinChannel', async (channelName: string) => {
+        const userId = client.handshake.session?.user?.id
+        client.join(`${channelName}:${userId}`)
     })
     client.on('userIsTyping', async (channelName: string) => {
         client.to(channelName).emit('userIsTyping', { channelName, user: client.handshake.session?.user })
@@ -102,87 +117,4 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('disconnect', () => {
         console.log('client is disconnected')
     })
-})
-
-app.post('/register', mustNotBeAuthenticated, async function (req, res) {
-
-    if (!req.body || !req.body.email || !req.body.password || !req.body.name) {
-        res.status(403)
-        res.send({
-            message: 'you must provide valid email, password and name'
-        })
-        return
-    }
-    let userExists = await User.findByEmail(req.body.email)
-
-    if (userExists != null) {
-        res.status(403)
-        res.send({
-            message: 'this email is already used'
-        })
-        return
-    }
-    let user = await User.create(req.body)
-    delete user.password
-    req.session.user = user
-    res.json(user)
-})
-
-app.post('/login', mustNotBeAuthenticated, async function (req, res) {
-    if (!req.body || !req.body.email || !req.body.password) {
-        res.status(403)
-        res.send({
-            message: 'you must provide valid email and password'
-        })
-        return
-    }
-    let userExists = await User.findByEmail(req.body.email)
-
-    if (userExists == null || userExists.password != req.body.password) {
-        res.status(403)
-        res.send({
-            message: 'invalid credentials'
-        })
-        return
-    }
-    let user = userExists
-    delete user.password
-    req.session.user = user
-    res.json(user)
-})
-
-app.get('/logout', hasToBeAuthenticated, function (req, res) {
-    req.session.destroy(() => { })
-    res.json({ message: 'disconnected' })
-})
-
-app.post('/channel', hasToBeAuthenticated, async function (req, res) {
-
-    let channelToCreate = await Channel.create(req.body.name, req.session.user?.id)
-    await UserChannel.create(channelToCreate.id, req.session.user?.id)
-    res.json(channelToCreate)
-})
-app.delete('/channel', async function (req, res) {
-    if (!req.body.name) {
-        res.status(401)
-        res.send({
-            message: 'no channel provided'
-        })
-        return
-    }
-    let channelToDelete = await Channel.findByNameAndAuthor(req.body.name, req.session.user?.id)
-    if (!channelToDelete) {
-        res.status(401)
-        res.send({
-            message: 'you must provide a valid channel'
-        })
-        return
-    }
-    await Channel.deleteById(channelToDelete.id)
-    res.send('channel deleted')
-})
-
-app.get('/me', hasToBeAuthenticated, function (req, res) {
-
-    res.json(req.session.user)
 })

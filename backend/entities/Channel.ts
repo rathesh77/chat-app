@@ -34,6 +34,17 @@ export class Channel {
         })
         return result.rows[0]
     }
+    static async findById(channelId: String): Promise<ChannelI> {
+        const result = await PostgresStore.pgPool.query({
+            text: `SELECT * from ${Channel.tableName} 
+                    where id = $1
+                   `,
+            values: [
+                channelId
+            ]
+        })
+        return result.rows[0]
+    }
     static async deleteById(channelId: any) {
         await PostgresStore.pgPool.query({
             text: `DELETE  from ${Channel.tableName} 

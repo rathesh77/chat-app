@@ -8,10 +8,17 @@
       </div>
       <div id="channels-list">
         <div v-for="(value, name, index) in channels" v-bind:key="value.author">
-          <li v-on:click="switchChannel(index)">{{ name.substring(0,name.indexOf(':')) }}</li>
+          <li v-on:click="switchChannel(index)">
+            {{ name.substring(0, name.indexOf(":")) }}
+          </li>
         </div>
       </div>
+      <input type="email" id="email" v-model="personToInvite" />
+      <button type="button" v-on:click="invitePerson">
+        inviter dans le channel actuel
+      </button>
     </div>
+
     <div id="chatRoomContainer">
       <div id="details">
         <div id="lens"></div>
@@ -23,7 +30,7 @@
           <div
             v-for="(message, index) in channels[
               Object.keys(channels)[selectedChannel]
-            ]"
+            ].messages"
             v-bind:key="index"
             class="messageContainer"
           >
@@ -48,14 +55,14 @@
           </div>
         </div>
       </div>
-      <div id="userIsTyping">{{typingUsersNotification}}</div>
+      <div id="userIsTyping">{{ typingUsersNotification }}</div>
       <input
         type="text"
         v-model="message"
         @focus="userIsTyping"
         v-on:blur="userIsNotTypingAnymore"
       />
-      <button id="sendMessageButton" v-on:click="onSend()">Send</button>
+      <button id="sendMessageButton" v-on:click="onMessageSent()">Send</button>
       <div>
         <div class="buttons">
           <div class="icons" id="triangle"></div>
@@ -81,7 +88,8 @@ export default {
       selectedChannel: 0,
       channelName: "",
       typingUsers: {},
-      typingUsersNotification: ''
+      typingUsersNotification: "",
+      personToInvite: "",
     };
   },
   async created() {
@@ -104,6 +112,29 @@ export default {
   },
 
   methods: {
+    async invitePerson() {
+      if (!/^[a-zA-Z0-9]{5,}@test.fr$/.test(this.personToInvite)) {
+        console.log("regex failed");
+        //return;
+      }
+      const channelId = this.channels[
+        Object.keys(this.channels)[this.selectedChannel]
+      ].channelId;
+      try {
+        await axios.post("/invitation", {
+          recipient: this.personToInvite,
+          channelId,
+        });
+
+        this.$socket.emit("invitation", {
+          channelId,
+          recipient: this.personToInvite,
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    },
+
     switchChannel(index) {
       this.selectedChannel = index;
       const currentSelectedChannelName = Object.keys(this.channels)[
@@ -119,13 +150,18 @@ export default {
       }
     },
     async createChannel() {
-      
-      this.$socket.emit("createChannel", this.channelName);
-      this.channels[`${this.channelName}:${this.user.id}`] = [];
+      this.$socket.emit("joinChannel", this.channelName);
+      let newChannel = await axios.post("/channel", { name: this.channelName });
+      newChannel = newChannel.data;
+      this.channels[`${this.channelName}:${this.user.id}`] = {
+        channelId: newChannel.id,
+        channelName: this.channelName,
+        messages: [],
+      };
 
       this.$forceUpdate();
     },
-    onSend() {
+    onMessageSent() {
       let channelName = Object.keys(this.channels)[this.selectedChannel];
       if (this.message.length === 0 || /^ *$/.test(this.message)) return;
       this.$socket.emit("message", {
@@ -133,6 +169,7 @@ export default {
         fullName: this.user.name,
         content: this.message,
         channel: {
+          id: null,
           name: channelName,
           author: channelName.substring(channelName.indexOf(":") + 1),
         },
@@ -158,39 +195,31 @@ export default {
   },
   sockets: {
     async channelsList(userChannels) {
+      console.log(userChannels);
       this.user = await axios.get("/me");
       this.user = this.user.data;
       for (let channel of userChannels) {
-        if (
-          !this.channels[`${channel.channel_name}:${channel.channel_author_id}`]
-        ) {
-          this.channels[
-            `${channel.channel_name}:${channel.channel_author_id}`
-          ] = [
-            {
-              //channelId: channel.channel_id,
-              content: channel.content,
-              authorId: channel.message_author_id,
-              authorName: channel.message_author_name,
-            },
-          ];
-        } else
-          this.channels[
-            `${channel.channel_name}:${channel.channel_author_id}`
-          ].push({
-            //channelId: channel.channel_id,
-            content: channel.content,
-            authorId: channel.message_author_id,
-            authorName: channel.message_author_name,
-          });
+        const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`;
+        if (!this.channels[currentChannelName]) {
+          this.channels[currentChannelName] = {
+            channelId: channel.channel_id,
+            channelName: channel.channel_name,
+            messages: [],
+          };
+        }
+        this.channels[currentChannelName].messages.push({
+          content: channel.content,
+          authorId: channel.message_author_id,
+          authorName: channel.message_author_name,
+        });
       }
-
+      console.log(this.channels);
       this.$forceUpdate();
     },
     messageReceived(data) {
       let container = document.getElementById("chatMessagesContainer");
       if (!container) return;
-      this.channels[data.channel.name].push({
+      this.channels[data.channel.name].messages.push({
         authorId: data.authorId,
         content: data.content,
         authorName: data.fullName,
@@ -202,7 +231,6 @@ export default {
     },
 
     userIsTyping({ channelName, user }) {
-
       if (!this.typingUsers[channelName]) {
         this.typingUsers[channelName] = [];
       }
@@ -219,7 +247,6 @@ export default {
       }
     },
     userIsNotTypingAnymore({ channelName, user }) {
-
       for (let i = 0; i < this.typingUsers[channelName].length; i++) {
         if (user.id == this.typingUsers[channelName][i].id) {
           this.typingUsers[channelName].splice(i, 1);
@@ -236,6 +263,11 @@ export default {
         this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing`;
       } else {
         this.typingUsersNotification = "";
+      }
+    },
+    invitation(data) {
+      if (this.user.email === data.recipient.email) {
+        this.$socket.emit("joinChannel", data.channelName);
       }
     },
   },
