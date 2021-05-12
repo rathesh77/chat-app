@@ -14,7 +14,7 @@ import connectPgSession from 'connect-pg-simple'
 import PostgresStore from './PostgresStore'
 import User from './entities/User'
 import UserChannel from './entities/UserChannel'
-import { Channel } from './entities/Channel'
+import { Channel, ChannelI } from './entities/Channel'
 
 import {authRouter, channelRouter, invitationRouter} from './routes'
 let app = express()
@@ -47,7 +47,7 @@ app.use('/', authRouter)
 app.use('/', channelRouter)
 app.use('/', invitationRouter)
 
-const socket: io.Server = io(server, { origins: '*:*' })
+const socket: io.Server = io(server, { origins: 'http://localhost:8080' })
 
 socket.use(sharedSession(sessionMiddleware, { autoSave: true }));
 socket.use((socket, next) => {
@@ -102,9 +102,22 @@ socket.on('connection', async (client: io.Socket) => {
         socket.emit('invitation', data)
 
     })
-    client.on('joinChannel', async (channelName: string) => {
+    client.on('createChannel', async ({name}) => {
         const userId = client.handshake.session?.user?.id
-        client.join(`${channelName}:${userId}`)
+        client.join(`${name}:${userId}`)
+        let userChannels = await UserChannel.findByUserId(userId)
+        console.log(userChannels)
+        client.emit('channelsList', userChannels)
+
+    })
+    client.on('acceptInvitation', async (channelId: string) => {
+        const userId = client.handshake.session?.user?.id
+        let channelInvitedIn = await Channel.findById(channelId)
+        client.join(`${channelInvitedIn.name}:${channelInvitedIn.author}`)
+        let userChannels = await UserChannel.findByUserId(userId)
+        console.log(userChannels)
+        client.emit('channelsList', userChannels)
+
     })
     client.on('userIsTyping', async (channelName: string) => {
         client.to(channelName).emit('userIsTyping', { channelName, user: client.handshake.session?.user })

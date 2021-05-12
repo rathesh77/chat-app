@@ -62,7 +62,15 @@
         @focus="userIsTyping"
         v-on:blur="userIsNotTypingAnymore"
       />
-      <button id="sendMessageButton" v-on:click="onMessageSent()">Send</button>
+      <button
+        id="sendMessageButton"
+        v-on:click="onMessageSent()"
+        v-bind:disabled="
+          Object.keys(channels).length > 0 && message.length ? false : true
+        "
+      >
+        Send
+      </button>
       <div>
         <div class="buttons">
           <div class="icons" id="triangle"></div>
@@ -150,9 +158,14 @@ export default {
       }
     },
     async createChannel() {
-      this.$socket.emit("joinChannel", this.channelName);
+      if (!/^[a-zA-Z0-9]{5,}$/.test(this.channelName)) {
+        console.log("le format de channel est invalide");
+        return;
+      }
       let newChannel = await axios.post("/channel", { name: this.channelName });
       newChannel = newChannel.data;
+      this.$socket.emit("createChannel", newChannel);
+
       this.channels[`${this.channelName}:${this.user.id}`] = {
         channelId: newChannel.id,
         channelName: this.channelName,
@@ -163,7 +176,7 @@ export default {
     },
     onMessageSent() {
       let channelName = Object.keys(this.channels)[this.selectedChannel];
-      if (this.message.length === 0 || /^ *$/.test(this.message)) return;
+
       this.$socket.emit("message", {
         authorId: this.user.id,
         fullName: this.user.name,
@@ -266,8 +279,13 @@ export default {
       }
     },
     invitation(data) {
-      if (this.user.email === data.recipient.email) {
-        this.$socket.emit("joinChannel", data.channelName);
+      console.log("invitation recu");
+      console.log(this.user, data.recipient);
+      if (this.user.email === data.recipient) {
+        console.log("invitation recu");
+        console.log(data)
+        this.$socket.emit("acceptInvitation", data.channelId);
+        this.$forceUpdate();
       }
     },
   },

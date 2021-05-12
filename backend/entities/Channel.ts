@@ -22,7 +22,7 @@ export class Channel {
         `
     }
 
-    static async findByNameAndAuthor(channelName: String, id: any): Promise<ChannelI> {
+    static async findByNameAndAuthor(channelName: string, id: any): Promise<ChannelI> {
         const result = await PostgresStore.pgPool.query({
             text: `SELECT * from ${Channel.tableName} 
                     where name = $1
@@ -34,7 +34,7 @@ export class Channel {
         })
         return result.rows[0]
     }
-    static async findById(channelId: String): Promise<ChannelI> {
+    static async findById(channelId: string): Promise<ChannelI> {
         const result = await PostgresStore.pgPool.query({
             text: `SELECT * from ${Channel.tableName} 
                     where id = $1
@@ -55,7 +55,7 @@ export class Channel {
             ]
         })
     }
-    static async create(channelName: String, userId: any) {
+    static async create(channelName: string, userId: any) {
         const result = await PostgresStore.pgPool.query({
             text: `INSERT INTO ${Channel.tableName} 
                     (name,author) values($1,$2)
