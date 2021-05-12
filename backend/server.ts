@@ -5,8 +5,6 @@ declare module 'express-session' {
 }
 import cors from 'cors'
 import io from 'socket.io'
-import { SocketController } from './controllers'
-import { inMemorySocketRepository } from './infrastructure'
 import { Message, MessageI } from './entities/Message'
 import session from 'express-session'
 import express from 'express'
@@ -49,10 +47,9 @@ const socket: io.Server = io(server, { origins: '*:*' })
 
 socket.use(sharedSession(sessionMiddleware, { autoSave: true }));
 
-const socketController: SocketController = new SocketController(new inMemorySocketRepository())
 
 socket.on('connection', async (client: io.Socket) => {
-    socketController.onConnection(client)
+    console.log("A new client is connected", client.id)
 
     if (client.handshake.session?.user) {
         let currentUser = client.handshake.session.user
