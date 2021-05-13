@@ -18,8 +18,7 @@ export class Invitation {
             CREATE TABLE ${Invitation.tableName} (
                 id SERIAL PRIMARY KEY,
                 id_user INTEGER REFERENCES ${User.tableName}(id) ON DELETE CASCADE,
-                id_channel INTEGER REFERENCES ${Channel.tableName}(id) ON DELETE CASCADE,
-                status INTEGER
+                id_channel INTEGER REFERENCES ${Channel.tableName}(id) ON DELETE CASCADE
             )
         `
     }
@@ -27,7 +26,7 @@ export class Invitation {
     static async create(userId: any, channelId: String,) {
         const result = await PostgresStore.pgPool.query({
             text: `INSERT INTO ${Invitation.tableName} 
-                    (id_user,id_channel, status) values($1,$2,2)
+                    (id_user,id_channel) values($1,$2)
                     RETURNING *
                    `,
             values: [
