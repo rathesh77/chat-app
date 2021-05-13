@@ -268,6 +268,7 @@ export default {
     async channelsList(userChannels) {
       this.user = await axios.get("/me");
       this.user = this.user.data;
+      this.channels = {}
       for (let channel of userChannels) {
         const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`;
         if (!this.channels[currentChannelName]) {
