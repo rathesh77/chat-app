@@ -69,7 +69,6 @@ socket.on('connection', async (client: io.Socket) => {
         let previousRoom = null
         for (let channel of userChannels) {
             let members = await UserChannel.findMembersByChannelId(channel.channel_id)
-            //console.log(members)
             channel.members = members
             const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
             if (previousRoom != currentChannelName) {
@@ -78,8 +77,6 @@ socket.on('connection', async (client: io.Socket) => {
             }
 
         }
-        console.log(userChannels)
-
         client.emit('channelsList', userChannels)
     }
     client.on('getChannelsAndMessages', async ()=>{
@@ -90,7 +87,6 @@ socket.on('connection', async (client: io.Socket) => {
         let previousRoom = null
         for (let channel of userChannels) {
             let members = await UserChannel.findMembersByChannelId(channel.channel_id)
-            //console.log(members)
             channel.members = members
             const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
             if (previousRoom != currentChannelName) {
@@ -136,9 +132,6 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('leaveChannel', async (channel: any) => {
         const userId = client.handshake.session?.user?.id
         const {channelId, channelName, channelAuthor} = channel
-        console.log(channelId, channelName, channelAuthor)
-        console.log(channel)
-
         client.leave(`${channel.channelName}:${channelAuthor}`)
         let userChannels = await UserChannel.deleteByUserIdAndChannelId(userId, channelId)
         //client.emit('channelsList', userChannels)

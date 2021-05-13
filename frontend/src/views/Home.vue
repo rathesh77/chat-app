@@ -194,8 +194,18 @@ export default {
       const currentChannel =  this.channels[Object.keys(this.channels)[this.selectedChannel]]
       this.$socket.emit('leaveChannel', currentChannel)
       delete this.channels[ Object.keys(this.channels)[this.selectedChannel]]
-      if ( this.selectedChannel >0)
-        this.selectedChannel =this.selectedChannel-1
+      this.selectedChannel =Object.keys(this.channels).length ? Object.keys(this.channels).length-1 : 0
+      const currentSelectedChannelName = Object.keys(this.channels)[
+        this.selectedChannel
+      ];
+      if (!currentSelectedChannelName) {
+        this.selectedChannelName = ''
+        return
+      }
+      this.selectedChannelName = currentSelectedChannelName.substring(
+        0,
+        currentSelectedChannelName.indexOf(":")
+      );
       this.$forceUpdate()
     },
     async signOut() {
@@ -232,14 +242,9 @@ export default {
         0,
         currentSelectedChannelName.indexOf(":")
       );
-      if (!this.typingUsers[currentSelectedChannelName]) return;
-      if (this.typingUsers[currentSelectedChannelName].length > 1) {
-        this.typingUsersNotification = "Many users are typing...";
-      } else if (this.typingUsers[currentSelectedChannelName].length == 1) {
-        this.typingUsersNotification = `${this.typingUsers[currentSelectedChannelName][0].user.name} is typing...`;
-      } else {
-        this.typingUsersNotification = "";
-      }
+      
+      this.typingUsersNotification = "";
+      
     },
     async createChannel() {
       if (!/^[a-zA-Z0-9 ]{5,}$/.test(this.channelName)) {
@@ -292,7 +297,8 @@ export default {
   },
   sockets: {
     newMemberJoined({userName,completeChannelName}) {
-      console.log('new member joined',this.channels[completeChannelName] )
+      if ( !this.channels[completeChannelName].members)
+      this.channels[completeChannelName].members = []
       this.channels[completeChannelName].members.push({name:userName})
       this.$forceUpdate()
     },
@@ -300,7 +306,6 @@ export default {
       this.user = await axios.get("/me");
       this.user = this.user.data;
       this.channels = {}
-      console.log(userChannels)
       for (let channel of userChannels) {
         const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`;
         if (!this.channels[currentChannelName]) {
