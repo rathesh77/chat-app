@@ -16,20 +16,35 @@ router.post('/register', mustNotBeAuthenticated, async function (req, res) {
     if (!req.body || !req.body.email || !req.body.password || !req.body.name) {
         res.status(403)
         res.send({
-            message: 'you must provide valid email, password and name'
+            message: 'You must provide a valid email, password and name'
         })
         return
     }
-    let userExists = await User.findByEmail(req.body.email)
+    const {email, password, name} = req.body
+    let userExists = await User.findByEmail(email)
 
     if (userExists != null) {
         res.status(403)
         res.send({
-            message: 'this email is already used'
+            message: 'This email is already used'
         })
         return
     }
-    let user = await User.create(req.body)
+    if (!/^[a-z-A-Z0-9\._-]+@[a-z-A-Z0-9]+\.[a-z-A-Z0-9]{2,5}$/.test(email)) {
+        res.status(403)
+        res.send({
+            message: 'Invalid email'
+        })
+        return
+    }
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
+        res.status(403)
+        res.send({
+            message: 'Password must contain at least 8 characters including one letter and one number'
+        })
+        return
+    }
+    let user = await User.create({email,password,name})
     delete user.password
     req.session.user = user
     res.json(user)
@@ -39,7 +54,7 @@ router.post('/login', mustNotBeAuthenticated, async function (req, res) {
     if (!req.body || !req.body.email || !req.body.password) {
         res.status(403)
         res.send({
-            message: 'you must provide valid email and password'
+            message: 'You must provide an email and password'
         })
         return
     }
@@ -49,7 +64,7 @@ router.post('/login', mustNotBeAuthenticated, async function (req, res) {
     if (userExists == null || !(await bcrypt.compare(password, userExists.password))) {
         res.status(403)
         res.send({
-            message: 'invalid credentials'
+            message: 'Invalid credentials'
         })
         return
     }

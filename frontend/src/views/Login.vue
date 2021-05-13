@@ -13,11 +13,14 @@
         Password
       </label>
       <input class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3" id="password" type="password" placeholder="password" v-model="password" required>
-      <p class="text-red text-sm italic">No account ? create an account <button v-on:click="$router.push({path:'/register'})" type="button" class="text-black font-bold">here</button></p>
+      <p class="text-red text-sm italic">Don't have an account ? <button v-on:click="$router.push({path:'/register'})" type="button" class="text-black font-bold">Sign up</button></p>
+    </div>
+    <div class="mb-6">
+        <div class="text-red-800 text-sm text-center">{{errorMessage}}</div>
     </div>
     <div class="flex items-center justify-between">
       <button v-on:click="login" class="border-black py-1 px-4 border-2 inline-block font-bold m-auto" type="button">
-        Sign In
+        Log In
       </button>
       
     </div>
@@ -42,6 +45,7 @@ export default {
     return {
       email: "",
       password: "",
+      errorMessage: ""
     };
   },
   created() {},
@@ -54,8 +58,9 @@ export default {
         });
         this.$router.push({path:'/'})
 
-      } catch {
+      } catch (err) {
           //this.$router.push({path:'/'})
+          this.errorMessage = err.response.data.message
       }
 
     },

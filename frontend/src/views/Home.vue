@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <Modal :message="modalMessage"/>
     <div id="channels" class="">
       <div id="create-channel">
         <input class="focus:outline-none bg-black mr-2" type="text" v-model="channelName" placeholder="Create a channel" />
@@ -21,15 +22,15 @@
         <div id="channel-name">{{selectedChannelName}}</div>
         <div class="flex space-x-2 ">
           <div>
-             <input class="text-xs mr-2" type="email" id="email" v-model="personToInvite" placeholder="Invite a member @email" />
-              <button type="button" v-on:click="invitePerson" class="py-0 px-2 border border-black">+</button>
+             <input class="text-xs mr-2 text-black focus:outline-none" type="email" id="email" v-model="personToInvite" placeholder="Invite a member @email" />
+              <button type="button" v-on:click="invitePerson" class="py-0 px-2 border border-black" v-bind:disabled="selectedChannelName == null">+</button>
 
           </div>
           <div> 
-          <button type="button" class="py-0 px-2 border-2 border-black">Leave room</button>
+          <button type="button" class="py-0 px-2 border-2 border-black">leave room</button>
         </div>
           <div> 
-          <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="disconnect">Disconnect</button>
+          <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="signOut">sign out</button>
         </div>
         </div>
         
@@ -102,10 +103,10 @@
 
 <script>
 import axios from "../axios";
-
+import Modal from '../components/Modal.vue';
 export default {
   name: "App",
-  components: {},
+  components: {Modal},
   data() {
     return {
       user: null,
@@ -117,6 +118,7 @@ export default {
       typingUsers: {},
       typingUsersNotification: "",
       personToInvite: "",
+      modalMessage : ['Channel creation: a channel name must contain at least 5 caracteres',"Invite a user to a channel: you must enter an email of an existing user"]
     };
   },
   async created() {
@@ -131,7 +133,7 @@ export default {
   },
 
   methods: {
-    async disconnect(){
+    async signOut(){
       this.user = {}
       await axios.get('/logout')
       this.$router.push({path:'/login'}) 
@@ -383,11 +385,6 @@ export default {
   text-align: left;
 }
 
-.grayed {
-}
-input {
-    color:white !important
-}
 #message-input {
     padding: 6px  !important;
     background-color: #2C2F33;
