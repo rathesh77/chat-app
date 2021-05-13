@@ -78,6 +78,23 @@ socket.on('connection', async (client: io.Socket) => {
 
         client.emit('channelsList', userChannels)
     }
+    client.on('getChannelsAndMessages', async ()=>{
+        let currentUser = client.handshake.session?.user
+        // on recupere la liste des channels du client
+        let userChannels = await UserChannel.findByUserId(currentUser?.id)
+        // le client rejoint tous les channels où il etait precedemment
+        let previousRoom = null
+        for (let channel of userChannels) {
+            const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
+            if (previousRoom != currentChannelName) {
+                client.join(currentChannelName)
+                previousRoom = currentChannelName
+            }
+
+        }
+
+        client.emit('channelsList', userChannels)
+    })
     client.on('message', async (data: MessageI) => {
 
         let channel = data.channel
