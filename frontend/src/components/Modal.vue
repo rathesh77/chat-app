@@ -18,7 +18,7 @@
 export default {
   name: "Modal",
   props: {
-    message: String,
+    message: Array,
   },
   components: {},
   data() {
