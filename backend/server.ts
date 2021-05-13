@@ -123,7 +123,6 @@ socket.on('connection', async (client: io.Socket) => {
         const userId = client.handshake.session?.user?.id
         client.join(`${name}:${userId}`)
         let userChannels = await UserChannel.findByUserId(userId)
-        console.log(userChannels)
         client.emit('channelsList', userChannels)
 
     })
@@ -132,7 +131,6 @@ socket.on('connection', async (client: io.Socket) => {
         let channelInvitedIn = await Channel.findById(channelId)
         client.join(`${channelInvitedIn.name}:${channelInvitedIn.author}`)
         let userChannels = await UserChannel.findByUserId(userId)
-        console.log(userChannels)
         client.emit('channelsList', userChannels)
 
     })
