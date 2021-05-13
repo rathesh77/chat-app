@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div id="content">
       <div
-        class="bg-white shadow-md rounded px-32 py-16 flex flex-col rounded-r-sm"
+        class="bg-white shadow-md px-32 py-16 flex flex-col"
       >
         <div class="mb-4">
           <label
@@ -12,7 +12,7 @@
             Email
           </label>
           <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker"
+            class="shadow appearance-none border rounded w-full py-2 px-3"
             id="email"
             type="email"
             placeholder="Email"
@@ -27,7 +27,7 @@
             Password
           </label>
           <input
-            class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
             id="password"
             type="password"
             placeholder="password"
@@ -93,7 +93,5 @@ export default {
 </script>
 
 <style scoped>
-#content {
-  border: 1px solid silver;
-}
+
 </style>
