@@ -3,8 +3,7 @@ import User from './User'
 import { Channel } from './Channel'
 import { Message } from './Message'
 class UserChannel {
-
-
+    
     static tableName: string
 
     static toSQLTable(): string {
@@ -79,6 +78,19 @@ class UserChannel {
         })
         return result.rows[0]
     }
+
+    static async deleteByUserIdAndChannelId(userId: string, channelId: string) {
+        const result = await PostgresStore.pgPool.query({
+            text: `DELETE FROM ${UserChannel.tableName}
+                    where id_user = $1 and id_channel = $2
+                   `,
+            values: [
+                userId, channelId
+            ]
+        })
+        return result.rows[0]
+    }
+
 }
 
 UserChannel.tableName = 'UserChannel'

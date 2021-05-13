@@ -126,6 +126,17 @@ socket.on('connection', async (client: io.Socket) => {
         client.emit('channelsList', userChannels)
 
     })
+    client.on('leaveChannel', async (channel: any) => {
+        const userId = client.handshake.session?.user?.id
+        const {channelId, channelName, channelAuthor} = channel
+        console.log(channelId, channelName, channelAuthor)
+        console.log(channel)
+
+        client.leave(`${channel.channelName}:${channelAuthor}`)
+        let userChannels = await UserChannel.deleteByUserIdAndChannelId(userId, channelId)
+        //client.emit('channelsList', userChannels)
+
+    })
     client.on('acceptInvitation', async (channelId: string) => {
         const userId = client.handshake.session?.user?.id
         let channelInvitedIn = await Channel.findById(channelId)

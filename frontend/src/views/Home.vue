@@ -55,8 +55,8 @@
             </button>
           </div>
           <div>
-            <button type="button" class="py-0 px-2 border-2 border-black">
-              leave room
+            <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="leaveChannel">
+              leave channel
             </button>
           </div>
           <div>
@@ -172,6 +172,12 @@ export default {
   },
 
   methods: {
+    async leaveChannel(){      
+      const currentChannel =  this.channels[Object.keys(this.channels)[this.selectedChannel]]
+      this.$socket.emit('leaveChannel', currentChannel)
+      delete this.channels[ Object.keys(this.channels)[this.selectedChannel]]
+      this.$forceUpdate()
+    },
     async signOut() {
       this.user = {};
       await axios.get("/logout");
@@ -275,6 +281,7 @@ export default {
           this.channels[currentChannelName] = {
             channelId: channel.channel_id,
             channelName: channel.channel_name,
+            channelAuthor: channel.channel_author_id,
             messages: [],
           };
         }
