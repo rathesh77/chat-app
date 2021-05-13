@@ -3,6 +3,8 @@ import App from './App.vue'
 import VueSocketIO from 'vue-socket.io'
 import VueRouter from 'vue-router'
 import routes from './router'
+import './assets/tailwind.css'
+
 Vue.config.productionTip = false
 
 Vue.use(VueRouter)

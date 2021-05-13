@@ -1,24 +1,39 @@
 <template>
-  <div>
-    <div id="form">
-      <label for="name">name: </label>
-      <input type="text" id="name" v-model="name" required /><br />
-
-      <label for="email">email: </label>
-      <input
-        type="email"
-        id="email"
-        v-model="email"
-        pattern=".+@[a-zA-Z].[a-zA-Z]"
-        required
-      /><br />
-
-      <label for="password">password: </label>
-      <input type="password" id="password" v-model="password" required /> <br />
-
-      <button type="button" id="submit" v-on:click="register">submit</button>
+    <div class="wrapper">
+    <div id="content">
+      <div class="bg-white shadow-md rounded px-32 py-16 flex flex-col rounded-r-sm">
+        <div class="mb-4">
+      <label class="block text-grey-darker text-sm font-bold mb-2" for="name" >
+        Name
+      </label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker" id="name" type="text" placeholder="name" v-model="name" required >
     </div>
+    <div class="mb-4">
+      <label class="block text-grey-darker text-sm font-bold mb-2" for="email" >
+        Email
+      </label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker" id="email" type="email" placeholder="Email" v-model="email" >
+    </div>
+    <div class="mb-6">
+      <label class="block text-grey-darker text-sm font-bold mb-2" for="password">
+        Password
+      </label>
+      <input class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3" id="password" type="password" placeholder="password" v-model="password" required>
+      <p class="text-red text-sm italic">Already have an account ? log in <button v-on:click="$router.push({path:'/login'})" type="button" class="text-black font-bold">here</button></p>
+    </div>
+    <div class="flex items-center justify-between">
+      <button v-on:click="register" class="border-black py-1 px-4 border-2 inline-block font-bold m-auto" type="button">
+        Sign up
+      </button>
+      
+    </div>
+</div>
+    </div>
+
+
+  
   </div>
+
 </template>
 
 <script>
@@ -53,4 +68,9 @@ export default {
 </script>
 
 <style scoped>
+
+#content {
+ border: 1px solid silver;
+}
+
 </style>

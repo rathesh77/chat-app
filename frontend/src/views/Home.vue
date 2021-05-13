@@ -1,32 +1,43 @@
 <template>
   <div id="app">
-    <div id="notification">Connected successfully to the server</div>
-    <div id="channels">
+    <div id="channels" class="">
       <div id="create-channel">
-        <input type="text" id="channel-name" v-model="channelName" />
-        <button type="button" v-on:click="createChannel">Create channel</button>
+        <input class="focus:outline-none bg-black mr-2" type="text" v-model="channelName" placeholder="Create a channel" />
+        <button type="button" v-on:click="createChannel" class="py-0 px-2 border border-black">+</button>
       </div>
       <div id="channels-list">
-        <div v-for="(value, name, index) in channels" v-bind:key="value.author">
-          <li v-on:click="switchChannel(index)">
+        <ul> 
+          <li v-for="(value, name, index) in channels" v-bind:key="value.author" v-on:click="switchChannel(index)">
             {{ name.substring(0, name.indexOf(":")) }}
           </li>
-        </div>
+        </ul>
       </div>
-      <input type="email" id="email" v-model="personToInvite" />
-      <button type="button" v-on:click="invitePerson">
-        inviter dans le channel actuel
-      </button>
+      
+     
     </div>
 
-    <div id="chatRoomContainer">
-      <div id="details">
-        <div id="lens"></div>
-        <div id="edge"></div>
-      </div>
+    <div id="chatRoomContainer" class="flex flex-col">
+      <div id="header" class="p-5 flex flex-row justify-between border-b border-black">
+        <div id="channel-name">{{selectedChannelName}}</div>
+        <div class="flex space-x-2 ">
+          <div>
+             <input class="text-xs mr-2" type="email" id="email" v-model="personToInvite" placeholder="Invite a member @email" />
+              <button type="button" v-on:click="invitePerson" class="py-0 px-2 border border-black">+</button>
 
-      <div id="chatMessagesContainer">
-        <div v-if="Object.keys(channels).length > 0">
+          </div>
+          <div> 
+          <button type="button" class="py-0 px-2 border-2 border-black">Leave room</button>
+        </div>
+          <div> 
+          <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="disconnect">Disconnect</button>
+        </div>
+        </div>
+        
+        
+      </div>
+      <div id="chatMessagesContainer" class="p-6 flex flex-col justify-between">
+        <div style="max-height:80vh;overflow:auto" class="p-3">
+            <div v-if="Object.keys(channels).length > 0">
           <div
             v-for="(message, index) in channels[
               Object.keys(channels)[selectedChannel]
@@ -54,13 +65,19 @@
             </div>
           </div>
         </div>
-      </div>
-      <div id="userIsTyping">{{ typingUsersNotification }}</div>
-      <input
+                </div>
+
+        <div class="flex flex-col"> 
+           <div id="userIsTyping">{{ typingUsersNotification }}</div>
+
+        <div id="footer" class="flex">
+      <input class="flex-grow focus:outline-none"
         type="text"
         v-model="message"
         @focus="userIsTyping"
         v-on:blur="userIsNotTypingAnymore"
+        placeholder="Write a message"
+        id="message-input"
       />
       <button
         id="sendMessageButton"
@@ -68,16 +85,17 @@
         v-bind:disabled="
           Object.keys(channels).length > 0 && message.length ? false : true
         "
+        class="py-0 px-2 border-2 border-black"
       >
         Send
       </button>
-      <div>
-        <div class="buttons">
-          <div class="icons" id="triangle"></div>
-          <div class="icons" id="circle"></div>
-          <div class="icons" id="square"></div>
         </div>
+        </div>
+        
       </div>
+               
+      
+    
     </div>
   </div>
 </template>
@@ -94,6 +112,7 @@ export default {
       message: "",
       channels: {},
       selectedChannel: 0,
+      selectedChannelName : null,
       channelName: "",
       typingUsers: {},
       typingUsersNotification: "",
@@ -105,21 +124,18 @@ export default {
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
-    this.$socket.on("connect_error", function () {
-      let notification = document.getElementById("notification");
-
-      notification.style.opacity = 1;
-      notification.innerText = "Disconnected from the server";
-      setTimeout(() => {
-        notification.style.opacity = 0;
-      }, 5000);
-    });
+    this.$socket.emit('getChannelsAndMessages')
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
     });
   },
 
   methods: {
+    async disconnect(){
+      this.user = {}
+      await axios.get('/logout')
+      this.$router.push({path:'/login'}) 
+    },
     async invitePerson() {
       if (!/^[a-zA-Z0-9]{5,}@test.fr$/.test(this.personToInvite)) {
         console.log("regex failed");
@@ -148,17 +164,18 @@ export default {
       const currentSelectedChannelName = Object.keys(this.channels)[
         this.selectedChannel
       ];
+      this.selectedChannelName = currentSelectedChannelName.substring(0,currentSelectedChannelName.indexOf(':') )
       if (!this.typingUsers[currentSelectedChannelName]) return;
       if (this.typingUsers[currentSelectedChannelName].length > 1) {
         this.typingUsersNotification = "Many users are typing...";
       } else if (this.typingUsers[currentSelectedChannelName].length == 1) {
-        this.typingUsersNotification = `${this.typingUsers[currentSelectedChannelName][0].user.name} is typing`;
+        this.typingUsersNotification = `${this.typingUsers[currentSelectedChannelName][0].user.name} is typing...`;
       } else {
         this.typingUsersNotification = "";
       }
     },
     async createChannel() {
-      if (!/^[a-zA-Z0-9]{5,}$/.test(this.channelName)) {
+      if (!/^[a-zA-Z0-9 ]{5,}$/.test(this.channelName)) {
         console.log("le format de channel est invalide");
         return;
       }
@@ -171,7 +188,7 @@ export default {
         channelName: this.channelName,
         messages: [],
       };
-
+      this.channelName = ""
       this.$forceUpdate();
     },
     onMessageSent() {
@@ -228,6 +245,8 @@ export default {
       }
       console.log(this.channels);
       this.$forceUpdate();
+      if ( Object.keys(this.channels)[this.selectedChannel])
+      this.selectedChannelName = Object.keys(this.channels)[this.selectedChannel].substring(0, Object.keys(this.channels)[this.selectedChannel].indexOf(':') )
     },
     messageReceived(data) {
       let container = document.getElementById("chatMessagesContainer");
@@ -256,7 +275,7 @@ export default {
       if (this.typingUsers[channelName].length > 1) {
         this.typingUsersNotification = "Many users are typing...";
       } else {
-        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing`;
+        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing...`;
       }
     },
     userIsNotTypingAnymore({ channelName, user }) {
@@ -273,7 +292,7 @@ export default {
       if (this.typingUsers[channelName].length > 1) {
         this.typingUsersNotification = "Many users are typing...";
       } else if (this.typingUsers[channelName].length == 1) {
-        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing`;
+        this.typingUsersNotification = `${this.typingUsers[channelName][0].name} is typing...`;
       } else {
         this.typingUsersNotification = "";
       }
@@ -294,10 +313,28 @@ export default {
 
 <style scoped>
 #app {
-  font-family: Arial, Helvetica, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  color: white !important;
+}
+#channels {
+  background-color: #2c2f33;
+    padding: 10px;
+
+}
+
+#channels-list {
+  list-style: none;
+}
+#channels-list ul li:hover {
+  cursor: pointer;
+  background-color: #23272a;
+}
+#channels-list ul li {
+  padding: 10px;
+}
+#app {
+  display:flex;
+  flex-direction: row;
+  width: 100%;
   height: 100%;
 }
 #notification {
@@ -315,64 +352,28 @@ export default {
   overflow-x: auto;
   font-size: 14px;
 }
-#fullNameForm {
-  display: flex;
-  flex-direction: column;
-}
-#fullNameForm button {
-  margin-top: 5px;
-}
-#fullNameForm label {
-  margin-bottom: 5px;
-}
-#chatRoomContainer {
-  border: 1px solid black;
-  border-radius: 50px;
-  padding: 70px 20px 70px 20px;
-}
 
-#sendMessageButton {
-}
-#details {
-  margin-bottom: 20px;
-}
-#lens {
-  width: 15px;
-  height: 15px;
-  border: 1px solid silver;
-  border-radius: 50%;
-  margin-left: 35px;
-  display: inline-block;
-}
-#edge {
-  width: 105px;
-  height: 10px;
-  border: 1px solid silver;
-  border-radius: 50px;
-  margin-left: 45px;
-  margin-bottom: 5px;
-  display: inline-block;
+#chatRoomContainer {
+  height: 100%;
+  /*padding: 70px 20px 70px 20px;*/
+  flex-grow: 1;
 }
 
 #chatMessagesContainer {
-  height: 450px;
-  width: 270px;
-  border: 1px solid black;
-  padding: 10px;
-  overflow: auto;
+    height: 100%;
+
+  width: 100%;
 }
-.messageContainer .author {
-  font-size: 12px;
-}
+
 .messageContainer .messageContent {
-  border: 1px solid silver;
-  border-radius: 10px;
+  border: 1px solid black;
   display: inline-block;
-  padding: 7px;
+  padding : 5px 10px 5px 10px;
   font-weight: 500;
   max-width: 200px;
   word-wrap: break-word;
   margin-bottom: 5px;
+  border-radius: 10px;
 }
 
 .messageContainer .sourceMessages {
@@ -381,33 +382,16 @@ export default {
 .messageContainer .destinationMessages {
   text-align: left;
 }
+
 .grayed {
-  background-color: lightgray;
 }
-.buttons {
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 0px 10px 0px;
-  border: 1px solid black;
+input {
+    color:white !important
 }
-.buttons .icons {
-  width: 0;
-  height: 0;
+#message-input {
+    padding: 6px  !important;
+    background-color: #2C2F33;
 }
-#triangle {
-  border-top: 10px solid transparent;
-  border-right: 15px solid grey;
-  border-bottom: 10px solid transparent;
-}
-#square {
-  width: 15px;
-  height: 15px;
-  background: grey;
-}
-#circle {
-  width: 15px;
-  height: 15px;
-  background: grey;
-  border-radius: 50%;
-}
+
+
 </style>
