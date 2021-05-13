@@ -1,124 +1,163 @@
 <template>
-  <div id="app">
-    <Modal :message="modalMessage"/>
+  <div id="app" class="flex w-full h-full text-white">
+    <Modal :message="modalMessage" />
     <div id="channels" class="">
       <div id="create-channel">
-        <input class="focus:outline-none bg-black mr-2" type="text" v-model="channelName" placeholder="Create a channel" />
-        <button type="button" v-on:click="createChannel" class="py-0 px-2 border border-black">+</button>
+        <input
+          class="focus:outline-none bg-black mr-2"
+          type="text"
+          v-model="channelName"
+          placeholder="Create a channel"
+        />
+        <button
+          type="button"
+          v-on:click="createChannel"
+          class="py-0 px-2 border border-black"
+        >
+          +
+        </button>
       </div>
-      <div id="channels-list">
-        <ul> 
-          <li v-for="(value, name, index) in channels" v-bind:key="value.author" v-on:click="switchChannel(index)">
+      <div id="channels-list" class="list-none">
+        <ul>
+          <li
+            v-for="(value, name, index) in channels"
+            v-bind:key="value.author"
+            v-on:click="switchChannel(index)"
+          >
             {{ name.substring(0, name.indexOf(":")) }}
           </li>
         </ul>
       </div>
-      
-     
     </div>
 
-    <div id="chatRoomContainer" class="flex flex-col">
-      <div id="header" class="p-5 flex flex-row justify-between border-b border-black">
-        <div id="channel-name">{{selectedChannelName}}</div>
-        <div class="flex space-x-2 ">
-          <div>
-             <input class="text-xs mr-2 text-black focus:outline-none" type="email" id="email" v-model="personToInvite" placeholder="Invite a member @email" />
-              <button type="button" v-on:click="invitePerson" class="py-0 px-2 border border-black" v-bind:disabled="selectedChannelName == null">+</button>
-
-          </div>
-          <div> 
-          <button type="button" class="py-0 px-2 border-2 border-black">leave room</button>
-        </div>
-          <div> 
-          <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="signOut">sign out</button>
-        </div>
-        </div>
-        
-        
-      </div>
-      <div id="chatMessagesContainer" class="p-6 flex flex-col justify-between">
-        <div style="max-height:80vh;overflow:auto" class="p-3" id="wrapper">
-            <div v-if="Object.keys(channels).length > 0">
-          <div
-            v-for="(message, index) in channels[
-              Object.keys(channels)[selectedChannel]
-            ].messages"
-            v-bind:key="index"
-            class="messageContainer"
-          >
-            <div
-              v-if="message.authorId === user.id && message.content != null"
-              class="sourceMessages"
-            >
-              <div class="author">
-                {{ message.authorName }}
-              </div>
-              <div class="messageContent grayed">{{ message.content }}</div>
-            </div>
-            <div
-              v-else-if="message.content != null"
-              class="destinationMessages"
-            >
-              <div class="author">
-                {{ message.authorName }}
-              </div>
-              <div class="messageContent">{{ message.content }}</div>
-            </div>
-          </div>
-        </div>
-                </div>
-
-        <div class="flex flex-col"> 
-           <div id="userIsTyping">{{ typingUsersNotification }}</div>
-
-        <div id="footer" class="flex">
-      <input class="flex-grow focus:outline-none"
-        type="text"
-        v-model="message"
-        @focus="userIsTyping"
-        v-on:blur="userIsNotTypingAnymore"
-        placeholder="Write a message"
-        id="message-input"
-      />
-      <button
-        id="sendMessageButton"
-        v-on:click="onMessageSent()"
-        v-bind:disabled="
-          Object.keys(channels).length > 0 && message.length ? false : true
-        "
-        class="py-0 px-2 border-2 border-black"
+    <div id="chatRoomContainer" class="flex flex-col h-full flex-grow">
+      <div
+        id="header"
+        class="p-5 flex flex-row justify-between border-b border-black"
       >
-        Send
-      </button>
+        <div id="channel-name">{{ selectedChannelName }}</div>
+        <div class="flex space-x-2">
+          <div>
+            <input
+              class="text-xs mr-2 text-black focus:outline-none"
+              type="email"
+              id="email"
+              v-model="personToInvite"
+              placeholder="Invite a member @email"
+            />
+            <button
+              type="button"
+              v-on:click="invitePerson"
+              class="py-0 px-2 border border-black"
+              v-bind:disabled="selectedChannelName == null"
+            >
+              +
+            </button>
+          </div>
+          <div>
+            <button type="button" class="py-0 px-2 border-2 border-black">
+              leave room
+            </button>
+          </div>
+          <div>
+            <button
+              type="button"
+              class="py-0 px-2 border-2 border-black"
+              v-on:click="signOut"
+            >
+              sign out
+            </button>
+          </div>
         </div>
-        </div>
-        
       </div>
-               
-      
-    
+      <div
+        id="chatMessagesContainer"
+        class="p-6 flex flex-col justify-between h-full w-full"
+      >
+        <div style="max-height: 80vh; overflow: auto" class="p-3" id="wrapper">
+          <div v-if="Object.keys(channels).length > 0">
+            <div
+              v-for="(message, index) in channels[
+                Object.keys(channels)[selectedChannel]
+              ].messages"
+              v-bind:key="index"
+              class="messageContainer"
+            >
+              <div
+                v-if="message.authorId === user.id && message.content != null"
+                class="sourceMessages"
+              >
+                <div class="author">
+                  {{ message.authorName }}
+                </div>
+                <div class="messageContent grayed">{{ message.content }}</div>
+              </div>
+              <div
+                v-else-if="message.content != null"
+                class="destinationMessages"
+              >
+                <div class="author">
+                  {{ message.authorName }}
+                </div>
+                <div class="messageContent">{{ message.content }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col">
+          <div id="userIsTyping">{{ typingUsersNotification }}</div>
+
+          <div id="footer" class="flex">
+            <input
+              class="flex-grow focus:outline-none"
+              type="text"
+              v-model="message"
+              @focus="userIsTyping"
+              v-on:blur="userIsNotTypingAnymore"
+              placeholder="Write a message"
+              id="message-input"
+            />
+            <button
+              id="sendMessageButton"
+              v-on:click="onMessageSent()"
+              v-bind:disabled="
+                Object.keys(channels).length > 0 && message.length
+                  ? false
+                  : true
+              "
+              class="py-0 px-2 border-2 border-black"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import axios from "../axios";
-import Modal from '../components/Modal.vue';
+import Modal from "../components/Modal.vue";
 export default {
   name: "App",
-  components: {Modal},
+  components: { Modal },
   data() {
     return {
       user: null,
       message: "",
       channels: {},
       selectedChannel: 0,
-      selectedChannelName : null,
+      selectedChannelName: null,
       channelName: "",
       typingUsers: {},
       typingUsersNotification: "",
       personToInvite: "",
-      modalMessage : ['Channel creation: a channel name must contain at least 5 caracteres',"Invite a user to a channel: you must enter an email of an existing user"]
+      modalMessage: [
+        "Channel creation: a channel name must contain at least 5 caracteres",
+        "Invite a user to a channel: you must enter an email of an existing user",
+      ],
     };
   },
   async created() {
@@ -126,21 +165,20 @@ export default {
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
-    this.$socket.emit('getChannelsAndMessages')
+    this.$socket.emit("getChannelsAndMessages");
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
     });
   },
 
   methods: {
-    async signOut(){
-      this.user = {}
-      await axios.get('/logout')
-      this.$socket.disconnect()
-      this.$router.push({path:'/login'}) 
+    async signOut() {
+      this.user = {};
+      await axios.get("/logout");
+      this.$socket.disconnect();
+      this.$router.push({ path: "/login" });
     },
     async invitePerson() {
-      
       const channelId = this.channels[
         Object.keys(this.channels)[this.selectedChannel]
       ].channelId;
@@ -164,7 +202,10 @@ export default {
       const currentSelectedChannelName = Object.keys(this.channels)[
         this.selectedChannel
       ];
-      this.selectedChannelName = currentSelectedChannelName.substring(0,currentSelectedChannelName.indexOf(':') )
+      this.selectedChannelName = currentSelectedChannelName.substring(
+        0,
+        currentSelectedChannelName.indexOf(":")
+      );
       if (!this.typingUsers[currentSelectedChannelName]) return;
       if (this.typingUsers[currentSelectedChannelName].length > 1) {
         this.typingUsersNotification = "Many users are typing...";
@@ -188,7 +229,7 @@ export default {
         channelName: this.channelName,
         messages: [],
       };
-      this.channelName = ""
+      this.channelName = "";
       this.$forceUpdate();
     },
     onMessageSent() {
@@ -243,8 +284,13 @@ export default {
         });
       }
       this.$forceUpdate();
-      if ( Object.keys(this.channels)[this.selectedChannel])
-      this.selectedChannelName = Object.keys(this.channels)[this.selectedChannel].substring(0, Object.keys(this.channels)[this.selectedChannel].indexOf(':') )
+      if (Object.keys(this.channels)[this.selectedChannel])
+        this.selectedChannelName = Object.keys(this.channels)[
+          this.selectedChannel
+        ].substring(
+          0,
+          Object.keys(this.channels)[this.selectedChannel].indexOf(":")
+        );
     },
     messageReceived(data) {
       let container = document.getElementById("wrapper");
@@ -306,18 +352,11 @@ export default {
 </script>
 
 <style scoped>
-#app {
-  color: white !important;
-}
 #channels {
   background-color: #2c2f33;
-    padding: 10px;
-
+  padding: 10px;
 }
 
-#channels-list {
-  list-style: none;
-}
 #channels-list ul li:hover {
   cursor: pointer;
   background-color: #23272a;
@@ -325,44 +364,17 @@ export default {
 #channels-list ul li {
   padding: 10px;
 }
-#app {
-  display:flex;
-  flex-direction: row;
-  width: 100%;
-  height: 100%;
-}
-#notification {
-  position: absolute;
-  right: 50px;
-  top: 50px;
-  padding: 10px;
-  border: 1px solid black;
-  opacity: 0;
-}
+
 #userIsTyping {
   visibility: visible;
   font-style: italic;
-  max-width: 300px;
-  overflow-x: auto;
   font-size: 14px;
-}
-
-#chatRoomContainer {
-  height: 100%;
-  /*padding: 70px 20px 70px 20px;*/
-  flex-grow: 1;
-}
-
-#chatMessagesContainer {
-    height: 100%;
-
-  width: 100%;
 }
 
 .messageContainer .messageContent {
   border: 1px solid black;
   display: inline-block;
-  padding : 5px 10px 5px 10px;
+  padding: 5px 10px 5px 10px;
   font-weight: 500;
   max-width: 200px;
   word-wrap: break-word;
@@ -378,9 +390,7 @@ export default {
 }
 
 #message-input {
-    padding: 6px  !important;
-    background-color: #2C2F33;
+  padding: 6px !important;
+  background-color: #2c2f33;
 }
-
-
 </style>

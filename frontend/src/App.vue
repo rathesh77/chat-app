@@ -2,7 +2,6 @@
   <div id="app" class="dark">
     <router-view />
   </div>
-  
 </template>
 
 <script>
@@ -12,10 +11,7 @@ export default {
   name: "App",
   components: {},
   data() {
-    return {
-   
-   
-    };
+    return {};
   },
   created() {
     //this.$socket.open();
@@ -25,12 +21,14 @@ export default {
 </script>
 
 <style>
-
 :root {
   font-size: 18px;
 }
 #app {
-  font-family: Inter var,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+  font-family: Inter var, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans,
+    sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol,
+    Noto Color Emoji;
   height: 100%;
 }
 
@@ -42,12 +40,12 @@ export default {
 }
 
 input {
-  padding: 7px  !important;
+  padding: 7px !important;
   border-radius: 7px;
 }
 
 .dark {
-  background-color: #23272A;
+  background-color: #23272a;
 }
 
 ::-webkit-scrollbar {

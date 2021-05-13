@@ -54,7 +54,7 @@ socket.use((socket, next) => {
     if (socket.handshake.session?.user) {
       next();
     } else {
-      next(new Error("invalid"));
+      next(new Error("You must be authenticated"));
     }
   });
 
@@ -105,7 +105,7 @@ socket.on('connection', async (client: io.Socket) => {
         let currentChannel = await UserChannel.findByUserIdAndChannelId(client.handshake.session?.user?.id, currentChannelId.id)
         // tester si on est bien dans le channel 
         if (!currentChannel) {
-            console.log('vous n"etes pas dans ce channel')
+            console.log('You are not part of this channel')
             return
         }
         channel.id = currentChannelId.id
