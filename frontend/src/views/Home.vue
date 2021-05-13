@@ -36,7 +36,7 @@
         
       </div>
       <div id="chatMessagesContainer" class="p-6 flex flex-col justify-between">
-        <div style="max-height:80vh;overflow:auto" class="p-3">
+        <div style="max-height:80vh;overflow:auto" class="p-3" id="wrapper">
             <div v-if="Object.keys(channels).length > 0">
           <div
             v-for="(message, index) in channels[
@@ -249,7 +249,7 @@ export default {
       this.selectedChannelName = Object.keys(this.channels)[this.selectedChannel].substring(0, Object.keys(this.channels)[this.selectedChannel].indexOf(':') )
     },
     messageReceived(data) {
-      let container = document.getElementById("chatMessagesContainer");
+      let container = document.getElementById("wrapper");
       if (!container) return;
       this.channels[data.channel.name].messages.push({
         authorId: data.authorId,
