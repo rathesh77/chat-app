@@ -68,6 +68,9 @@ socket.on('connection', async (client: io.Socket) => {
         // le client rejoint tous les channels où il etait precedemment
         let previousRoom = null
         for (let channel of userChannels) {
+            let members = await UserChannel.findMembersByChannelId(channel.channel_id)
+            //console.log(members)
+            channel.members = members
             const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
             if (previousRoom != currentChannelName) {
                 client.join(currentChannelName)
@@ -75,6 +78,7 @@ socket.on('connection', async (client: io.Socket) => {
             }
 
         }
+        console.log(userChannels)
 
         client.emit('channelsList', userChannels)
     }
@@ -85,6 +89,9 @@ socket.on('connection', async (client: io.Socket) => {
         // le client rejoint tous les channels où il etait precedemment
         let previousRoom = null
         for (let channel of userChannels) {
+            let members = await UserChannel.findMembersByChannelId(channel.channel_id)
+            //console.log(members)
+            channel.members = members
             const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`
             if (previousRoom != currentChannelName) {
                 client.join(currentChannelName)
@@ -139,8 +146,11 @@ socket.on('connection', async (client: io.Socket) => {
     })
     client.on('acceptInvitation', async (channelId: string) => {
         const userId = client.handshake.session?.user?.id
+        const userName = client.handshake.session?.user?.name
         let channelInvitedIn = await Channel.findById(channelId)
-        client.join(`${channelInvitedIn.name}:${channelInvitedIn.author}`)
+        const completeChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`
+        client.join(completeChannelName)
+        client.to(completeChannelName).emit('newMemberJoined',{userName, completeChannelName})
         let userChannels = await UserChannel.findByUserId(userId)
         client.emit('channelsList', userChannels)
 

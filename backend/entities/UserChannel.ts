@@ -78,6 +78,18 @@ class UserChannel {
         })
         return result.rows[0]
     }
+    static async findMembersByChannelId(channelId: string) {
+        const result = await PostgresStore.pgPool.query({
+            text: `SELECT u.name FROM ${UserChannel.tableName} AS uc 
+                    INNER JOIN ${User.tableName} AS u ON u.id = uc.id_user
+                    AND uc.id_channel = $1
+                   `,
+            values: [
+                channelId
+            ]
+        })
+        return result.rows
+    }
 
     static async deleteByUserIdAndChannelId(userId: string, channelId: string) {
         const result = await PostgresStore.pgPool.query({

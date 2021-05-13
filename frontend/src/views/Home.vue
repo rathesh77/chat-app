@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="flex w-full h-full text-white">
     <Modal :message="modalMessage" />
-    <div id="channels" class="">
+    <div id="channels" class="p-3">
       <div id="create-channel">
         <input
           class="focus:outline-none bg-black mr-2"
@@ -134,6 +134,23 @@
         </div>
       </div>
     </div>
+    <div id="users" class="space-y-5 p-5 pt-10">
+      <div>Members</div>
+      <div id="users-list" class="list-none">
+        <ul v-if="channels[
+                Object.keys(channels)[selectedChannel]
+              ]">
+          <li
+            v-for="(value, name, index) in channels[
+                Object.keys(channels)[selectedChannel]
+              ].members"
+            v-bind:key="index"
+          >
+           <span v-if="value.name">{{ value.name}}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -165,7 +182,8 @@ export default {
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
-    this.$socket.emit("getChannelsAndMessages");
+    if ( Object.keys(this.channels).length == 0)
+      this.$socket.emit("getChannelsAndMessages");
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
     });
@@ -176,6 +194,8 @@ export default {
       const currentChannel =  this.channels[Object.keys(this.channels)[this.selectedChannel]]
       this.$socket.emit('leaveChannel', currentChannel)
       delete this.channels[ Object.keys(this.channels)[this.selectedChannel]]
+      if ( this.selectedChannel >0)
+        this.selectedChannel =this.selectedChannel-1
       this.$forceUpdate()
     },
     async signOut() {
@@ -271,10 +291,16 @@ export default {
     },
   },
   sockets: {
+    newMemberJoined({userName,completeChannelName}) {
+      console.log('new member joined',this.channels[completeChannelName] )
+      this.channels[completeChannelName].members.push({name:userName})
+      this.$forceUpdate()
+    },
     async channelsList(userChannels) {
       this.user = await axios.get("/me");
       this.user = this.user.data;
       this.channels = {}
+      console.log(userChannels)
       for (let channel of userChannels) {
         const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`;
         if (!this.channels[currentChannelName]) {
@@ -282,6 +308,7 @@ export default {
             channelId: channel.channel_id,
             channelName: channel.channel_name,
             channelAuthor: channel.channel_author_id,
+            members:channel.members,
             messages: [],
           };
         }
@@ -290,7 +317,9 @@ export default {
           authorId: channel.message_author_id,
           authorName: channel.message_author_name,
         });
+        
       }
+
       this.$forceUpdate();
       if (Object.keys(this.channels)[this.selectedChannel])
         this.selectedChannelName = Object.keys(this.channels)[
@@ -360,17 +389,18 @@ export default {
 </script>
 
 <style scoped>
-#channels {
+#channels,  #users {
   background-color: #2c2f33;
-  padding: 10px;
 }
 
-#channels-list ul li:hover {
+#channels-list ul li:hover, #users-list ul li:hover {
   cursor: pointer;
   background-color: #23272a;
 }
-#channels-list ul li {
+#channels-list ul li,#users-list ul li {
   padding: 10px;
+    max-width: 220px;
+  overflow: auto;
 }
 
 #userIsTyping {
