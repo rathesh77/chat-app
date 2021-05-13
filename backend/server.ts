@@ -26,7 +26,7 @@ let sessionMiddleware = session({
         pool: PostgresStore.pgPool,
         tableName: 'session'
     }),
-    secret: 'keyboard cat',
+    secret: 'jT6aR1yH3iE9lE9 gD2bF0',
     resave: false,
     saveUninitialized: false,
 });
@@ -41,7 +41,7 @@ app.use(cors({
     credentials: true,
     origin: 'http://localhost:8080'
 }))
-app.use(express.urlencoded())
+app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use('/', authRouter)
 app.use('/', channelRouter)
