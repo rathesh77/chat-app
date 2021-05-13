@@ -136,13 +136,11 @@ export default {
     async signOut(){
       this.user = {}
       await axios.get('/logout')
+      this.$socket.disconnect()
       this.$router.push({path:'/login'}) 
     },
     async invitePerson() {
-      if (!/^[a-zA-Z0-9]{5,}@test.fr$/.test(this.personToInvite)) {
-        console.log("regex failed");
-        //return;
-      }
+      
       const channelId = this.channels[
         Object.keys(this.channels)[this.selectedChannel]
       ].channelId;
@@ -227,7 +225,6 @@ export default {
   },
   sockets: {
     async channelsList(userChannels) {
-      console.log(userChannels);
       this.user = await axios.get("/me");
       this.user = this.user.data;
       for (let channel of userChannels) {
@@ -245,7 +242,6 @@ export default {
           authorName: channel.message_author_name,
         });
       }
-      console.log(this.channels);
       this.$forceUpdate();
       if ( Object.keys(this.channels)[this.selectedChannel])
       this.selectedChannelName = Object.keys(this.channels)[this.selectedChannel].substring(0, Object.keys(this.channels)[this.selectedChannel].indexOf(':') )
@@ -300,11 +296,7 @@ export default {
       }
     },
     invitation(data) {
-      console.log("invitation recu");
-      console.log(this.user, data.recipient);
       if (this.user.email === data.recipient) {
-        console.log("invitation recu");
-        console.log(data)
         this.$socket.emit("acceptInvitation", data.channelId);
         this.$forceUpdate();
       }
