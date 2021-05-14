@@ -17,3 +17,5 @@ A chatting application to chat with your friends through text communication chan
 The frontend app will be running on port 8080<br>
 The backend app will be running on port 3000<br>
 PostgreSQL database will be running on port 5432<br>
+<br>
+Now you can visit http://localhost:8080 and enjoy the chat application !
