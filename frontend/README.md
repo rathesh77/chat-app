@@ -1,4 +1,4 @@
-# socket-front-app
+# Chat-app frontend
 
 ## Project setup
 ```
