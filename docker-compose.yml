@@ -1,0 +1,30 @@
+version: '2'
+services:
+  postgres:
+    image: 'postgres:latest'
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=superaccount
+      - POSTGRES_DB=bdd
+    restart: always
+
+  backend:
+    image: 'ratheshcharles/chat-app-backend:latest'
+    command: bash -c 'while !</dev/tcp/postgres/5432; do sleep 1; done;npx ts-node initDb.ts; npm start'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+    restart: always
+
+  frontend:
+    image: 'ratheshcharles/chat-app-frontend:latest'
+    ports:
+      - '8080:8080'
+    depends_on:
+      - backend
+    restart: always
+
