@@ -198,7 +198,7 @@ export default {
         Object.keys(this.channels)[this.selectedChannel]
       ];
       this.$socket.emit("leaveChannel", currentChannel);
-      if (currentChannel.channelAuthor == this.userId) {
+      if (currentChannel.channelAuthor == this.user.id) {
         await axios.post("/channel/delete", {
           name: this.selectedChannelName,
         });
@@ -268,6 +268,7 @@ export default {
       this.$socket.emit("createChannel", newChannel);
 
       this.channels[`${this.channelName}:${this.user.id}`] = {
+        channelAuthor: newChannel.author,
         channelId: newChannel.id,
         channelName: this.channelName,
         messages: [],
