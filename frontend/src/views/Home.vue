@@ -175,7 +175,7 @@ export default {
       typingUsersNotification: "",
       personToInvite: "",
       modalMessage: [
-        "Channel creation: a channel name must contain at least 5 caracteres",
+        "Channel creation: a channel name must contain at least 5 characters",
         "Invite a user to a channel: you must enter an email of an existing user",
       ],
     };
