@@ -49,7 +49,7 @@
               type="button"
               v-on:click="invitePerson"
               class="py-0 px-2 border border-black"
-              v-bind:disabled="selectedChannel == -1 ? true : false"
+              v-bind:disabled="selectedChannel == -1 || !this.personToInvite.length ? true : false"
             >
               +
             </button>
