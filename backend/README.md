@@ -8,7 +8,7 @@ npm install
 ## Start the server (follow the next steps carefully)
 ### Create tables in PostgreSQL database
 
-- There must be a POSTGRESQL database instance running before you start the server.
+- There must be a PostgreSQL database instance running before you start the server.
   - POSTGRES_USER=postgres
   - POSTGRES_PASSWORD=superaccount
   - POSTGRES_DB=bdd
