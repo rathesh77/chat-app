@@ -12,6 +12,7 @@ export interface MessageI {
 }
 
 export class Message {
+    
 
     static tableName: string
 
@@ -37,6 +38,19 @@ export class Message {
             ]
         })
         return result.rows[0]
+    }
+    static async findByChannelId(channelId: string) {
+        
+        const result = await PostgresStore.pgPool.query({
+            text: `select content, id_client as "authorId", u.name as "authorName" from ${Message.tableName} as m 
+                    INNER JOIN ${User.tableName} as u on u.id =  m.id_client
+                    where id_channel = $1
+                   `,
+            values: [
+                channelId
+            ]
+        })
+        return result.rows
     }
 }
 

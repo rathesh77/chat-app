@@ -144,7 +144,7 @@ socket.on('connection', async (client: io.Socket) => {
         const completeChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`
         client.join(completeChannelName)
         client.to(completeChannelName).emit('newMemberJoined',{userId, userName, completeChannelName})
-        client.emit('newChannel', channelInvitedIn)
+        client.emit('newChannel', {channelInvitedIn, messages: await Message.findByChannelId(channelInvitedIn.id)})
 
     })
     client.on('userIsTyping', async (channelName: string) => {

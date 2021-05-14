@@ -59,7 +59,7 @@
               type="button"
               class="py-0 px-2 border-2 border-black"
               v-on:click="leaveChannel"
-              v-bind:disabled="Object.keys(channels).length == 0 ? true : false"
+              v-bind:disabled="Object.keys(channels).length == 0 || selectedChannel == -1 ? true : false"
             >
               leave channel
             </button>
@@ -408,14 +408,14 @@ export default {
         this.$socket.emit("acceptInvitation", data.channelId);
       }
     },
-    newChannel(channelInvitedIn) {
+    newChannel({channelInvitedIn, messages}) {
       const currentChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`;
       this.channels[currentChannelName] = {
         channelId: channelInvitedIn.id,
         channelName: channelInvitedIn.name,
         channelAuthor: channelInvitedIn.author,
         members: [{ id: this.user.id, name: this.user.name }],
-        messages: [],
+        messages
       };
       this.$forceUpdate();
     },
