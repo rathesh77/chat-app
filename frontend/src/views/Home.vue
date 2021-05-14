@@ -49,7 +49,11 @@
               type="button"
               v-on:click="invitePerson"
               class="py-0 px-2 border border-black"
-              v-bind:disabled="selectedChannel == -1 || !this.personToInvite.length ? true : false"
+              v-bind:disabled="
+                selectedChannel == -1 || !this.personToInvite.length
+                  ? true
+                  : false
+              "
             >
               +
             </button>
@@ -59,7 +63,11 @@
               type="button"
               class="py-0 px-2 border-2 border-black"
               v-on:click="leaveChannel"
-              v-bind:disabled="Object.keys(channels).length == 0 || selectedChannel == -1 ? true : false"
+              v-bind:disabled="
+                Object.keys(channels).length == 0 || selectedChannel == -1
+                  ? true
+                  : false
+              "
             >
               leave channel
             </button>
@@ -80,7 +88,7 @@
         class="p-6 flex flex-col justify-between h-full w-full"
       >
         <div style="max-height: 80vh; overflow: auto" class="p-3" id="wrapper">
-          <div v-if="selectedChannel>-1">
+          <div v-if="selectedChannel > -1">
             <div
               v-for="(message, index) in channels[
                 Object.keys(channels)[selectedChannel]
@@ -127,9 +135,7 @@
               id="sendMessageButton"
               v-on:click="onMessageSent()"
               v-bind:disabled="
-                selectedChannel == -1 || !this.message.length
-                  ? true
-                  : false
+                selectedChannel == -1 || !this.message.length ? true : false
               "
               class="py-0 px-2 border-2 border-black"
             >
@@ -193,9 +199,9 @@ export default {
   },
   watch: {
     selectedChannel() {
-      if (this.selectedChannel == -1){
-        this.selectedChannelName = ''
-        return
+      if (this.selectedChannel == -1) {
+        this.selectedChannelName = "";
+        return;
       }
       const currentSelectedChannelName = Object.keys(this.channels)[
         this.selectedChannel
@@ -204,7 +210,7 @@ export default {
         0,
         currentSelectedChannelName.indexOf(":")
       );
-    }
+    },
   },
   methods: {
     async leaveChannel() {
@@ -218,10 +224,20 @@ export default {
         });
       }
       delete this.channels[Object.keys(this.channels)[this.selectedChannel]];
+
+      const temp = this.selectedChannel;
       this.selectedChannel = Object.keys(this.channels).length
         ? Object.keys(this.channels).length - 1
         : -1;
-      
+      if (temp === this.selectedChannel) {
+        const currentSelectedChannelName = Object.keys(this.channels)[
+          this.selectedChannel
+        ];
+        this.selectedChannelName = currentSelectedChannelName.substring(
+          0,
+          currentSelectedChannelName.indexOf(":")
+        );
+      }
       this.$forceUpdate();
     },
     async signOut() {
@@ -259,8 +275,8 @@ export default {
         return;
       }
       if (this.channels[`${this.channelName}:${this.user.id}`]) {
-        console.log('vous avez deja crée un channel portant ce nom')
-        return
+        console.log("vous avez deja crée un channel portant ce nom");
+        return;
       }
       let newChannel = await axios.post("/channel", { name: this.channelName });
       newChannel = newChannel.data;
@@ -273,7 +289,7 @@ export default {
         messages: [],
         members: [{ id: this.user.id, name: this.user.name }],
       };
-      this.selectedChannel++
+      this.selectedChannel++;
       this.channelName = "";
       this.$forceUpdate();
     },
@@ -314,11 +330,14 @@ export default {
       this.channels[channelName].members = this.channels[
         channelName
       ].members.filter((user) => user.id != userId);
-      if ( this.channels[channelName].members.length == 1 && this.user.id != this.channels[channelName].channelAuthor) {
-        delete this.channels[channelName]
-         this.selectedChannel = Object.keys(this.channels).length
-        ? Object.keys(this.channels).length - 1
-        : -1;
+      if (
+        this.channels[channelName].members.length == 1 &&
+        this.user.id != this.channels[channelName].channelAuthor
+      ) {
+        delete this.channels[channelName];
+        this.selectedChannel = Object.keys(this.channels).length
+          ? Object.keys(this.channels).length - 1
+          : -1;
       }
       this.$forceUpdate();
     },
@@ -408,14 +427,14 @@ export default {
         this.$socket.emit("acceptInvitation", data.channelId);
       }
     },
-    newChannel({channelInvitedIn, messages}) {
+    newChannel({ channelInvitedIn, messages }) {
       const currentChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`;
       this.channels[currentChannelName] = {
         channelId: channelInvitedIn.id,
         channelName: channelInvitedIn.name,
         channelAuthor: channelInvitedIn.author,
         members: [{ id: this.user.id, name: this.user.name }],
-        messages
+        messages,
       };
       this.$forceUpdate();
     },
