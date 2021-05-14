@@ -8,6 +8,13 @@ import UserChannel from '../entities/UserChannel'
 
 router.post('/channel', hasToBeAuthenticated, async function (req, res) {
 
+    if (!req.body.name || req.body.name.length>30 || req.body.name.length < 5) {
+        res.status(401)
+        res.send({
+            message: 'channels must contain at least 5 characters and maximum 30 characters'
+        })
+        return
+    }
     let channelToCreate = await Channel.create(req.body.name, req.session.user?.id)
     await UserChannel.create(channelToCreate.id, req.session.user?.id)
     res.json(channelToCreate)
