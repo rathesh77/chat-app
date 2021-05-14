@@ -105,6 +105,10 @@ socket.on('connection', async (client: io.Socket) => {
 
         // recuperer le channel où le msg est sur le point d'être envoyé
         let currentChannelId = await Channel.findByNameAndAuthor(channel.name.substring(0, channel.name.indexOf(':')), channel.author);
+        if ( !currentChannelId) {
+            console.log('this channel doesn\'t exist or has been deleted by it\'s owner')
+            return
+        }
         let currentChannel = await UserChannel.findByUserIdAndChannelId(client.handshake.session?.user?.id, currentChannelId.id)
         // tester si on est bien dans le channel 
         if (!currentChannel) {
@@ -118,9 +122,7 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('invitation', async (data: any) => {
         const {channelId, recipient}= data
         await UserChannel.create(channelId, (await User.findByEmail(recipient)).id)       
-        //client.join(`${channelName}:${userId}`)
         socket.emit('invitation', data)
-
     })
     client.on('createChannel', async ({name}) => {
         const userId = client.handshake.session?.user?.id
@@ -134,7 +136,6 @@ socket.on('connection', async (client: io.Socket) => {
         client.to(leftFromChannel).emit('userLeft', {userId, channelName: leftFromChannel})
         client.leave(leftFromChannel)
         await UserChannel.deleteByUserIdAndChannelId(userId, channelId)
-
     })
     client.on('acceptInvitation', async (channelId: string) => {
         const userId = client.handshake.session?.user?.id
@@ -151,7 +152,6 @@ socket.on('connection', async (client: io.Socket) => {
     })
     client.on('userIsNotTypingAnymore', async (channelName: string) => {
         client.to(channelName).emit('userIsNotTypingAnymore', { channelName, user: client.handshake.session?.user })
-
     })
 
     client.on('disconnect', () => {
