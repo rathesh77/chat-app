@@ -80,7 +80,7 @@ class UserChannel {
     }
     static async findMembersByChannelId(channelId: string) {
         const result = await PostgresStore.pgPool.query({
-            text: `SELECT u.name FROM ${UserChannel.tableName} AS uc 
+            text: `SELECT u.id, u.name FROM ${UserChannel.tableName} AS uc 
                     INNER JOIN ${User.tableName} AS u ON u.id = uc.id_user
                     AND uc.id_channel = $1
                    `,

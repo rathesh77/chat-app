@@ -125,16 +125,15 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('createChannel', async ({name}) => {
         const userId = client.handshake.session?.user?.id
         client.join(`${name}:${userId}`)
-        let userChannels = await UserChannel.findByUserId(userId)
-        client.emit('channelsList', userChannels)
 
     })
     client.on('leaveChannel', async (channel: any) => {
         const userId = client.handshake.session?.user?.id
         const {channelId, channelName, channelAuthor} = channel
-        client.leave(`${channel.channelName}:${channelAuthor}`)
-        let userChannels = await UserChannel.deleteByUserIdAndChannelId(userId, channelId)
-        //client.emit('channelsList', userChannels)
+        const leftFromChannel = `${channel.channelName}:${channelAuthor}`
+        client.to(leftFromChannel).emit('userLeft', {userId, channelName: leftFromChannel})
+        client.leave(leftFromChannel)
+        await UserChannel.deleteByUserIdAndChannelId(userId, channelId)
 
     })
     client.on('acceptInvitation', async (channelId: string) => {
@@ -143,9 +142,8 @@ socket.on('connection', async (client: io.Socket) => {
         let channelInvitedIn = await Channel.findById(channelId)
         const completeChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`
         client.join(completeChannelName)
-        client.to(completeChannelName).emit('newMemberJoined',{userName, completeChannelName})
-        let userChannels = await UserChannel.findByUserId(userId)
-        client.emit('channelsList', userChannels)
+        client.to(completeChannelName).emit('newMemberJoined',{userId, userName, completeChannelName})
+        client.emit('newChannel', channelInvitedIn)
 
     })
     client.on('userIsTyping', async (channelName: string) => {

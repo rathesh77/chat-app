@@ -55,7 +55,12 @@
             </button>
           </div>
           <div>
-            <button type="button" class="py-0 px-2 border-2 border-black" v-on:click="leaveChannel">
+            <button
+              type="button"
+              class="py-0 px-2 border-2 border-black"
+              v-on:click="leaveChannel"
+              v-bind:disabled="Object.keys(channels).length == 0 ? true : false"
+            >
               leave channel
             </button>
           </div>
@@ -137,16 +142,14 @@
     <div id="users" class="space-y-5 p-5 pt-10">
       <div>Members</div>
       <div id="users-list" class="list-none">
-        <ul v-if="channels[
-                Object.keys(channels)[selectedChannel]
-              ]">
+        <ul v-if="channels[Object.keys(channels)[selectedChannel]]">
           <li
             v-for="(value, name, index) in channels[
-                Object.keys(channels)[selectedChannel]
-              ].members"
+              Object.keys(channels)[selectedChannel]
+            ].members"
             v-bind:key="index"
           >
-           <span v-if="value.name">{{ value.name}}</span>
+            <span v-if="value.name">{{ value.name }}</span>
           </li>
         </ul>
       </div>
@@ -182,7 +185,7 @@ export default {
     this.$socket.open();
     this.user = await axios.get("/me");
     this.user = this.user.data;
-    if ( Object.keys(this.channels).length == 0)
+    if (Object.keys(this.channels).length == 0)
       this.$socket.emit("getChannelsAndMessages");
     window.addEventListener("beforeunload", () => {
       this.$socket.emit("userIsNotTypingAnymore", this.user.name);
@@ -190,23 +193,33 @@ export default {
   },
 
   methods: {
-    async leaveChannel(){      
-      const currentChannel =  this.channels[Object.keys(this.channels)[this.selectedChannel]]
-      this.$socket.emit('leaveChannel', currentChannel)
-      delete this.channels[ Object.keys(this.channels)[this.selectedChannel]]
-      this.selectedChannel =Object.keys(this.channels).length ? Object.keys(this.channels).length-1 : 0
+    async leaveChannel() {
+      const currentChannel = this.channels[
+        Object.keys(this.channels)[this.selectedChannel]
+      ];
+      this.$socket.emit("leaveChannel", currentChannel);
+      if (currentChannel.channelAuthor == this.userId) {
+        await axios.post("/channel/delete", {
+          name: this.selectedChannelName,
+        });
+      }
+      delete this.channels[Object.keys(this.channels)[this.selectedChannel]];
+      this.selectedChannel = Object.keys(this.channels).length
+        ? Object.keys(this.channels).length - 1
+        : 0;
       const currentSelectedChannelName = Object.keys(this.channels)[
         this.selectedChannel
       ];
       if (!currentSelectedChannelName) {
-        this.selectedChannelName = ''
-        return
+        this.selectedChannelName = "";
+        return;
       }
       this.selectedChannelName = currentSelectedChannelName.substring(
         0,
         currentSelectedChannelName.indexOf(":")
       );
-      this.$forceUpdate()
+
+      this.$forceUpdate();
     },
     async signOut() {
       this.user = {};
@@ -242,9 +255,8 @@ export default {
         0,
         currentSelectedChannelName.indexOf(":")
       );
-      
+
       this.typingUsersNotification = "";
-      
     },
     async createChannel() {
       if (!/^[a-zA-Z0-9 ]{5,}$/.test(this.channelName)) {
@@ -259,7 +271,9 @@ export default {
         channelId: newChannel.id,
         channelName: this.channelName,
         messages: [],
+        members: [{ id: this.user.id, name: this.user.name }],
       };
+      this.selectedChannelName = this.channelName;
       this.channelName = "";
       this.$forceUpdate();
     },
@@ -296,16 +310,25 @@ export default {
     },
   },
   sockets: {
-    newMemberJoined({userName,completeChannelName}) {
-      if ( !this.channels[completeChannelName].members)
-      this.channels[completeChannelName].members = []
-      this.channels[completeChannelName].members.push({name:userName})
-      this.$forceUpdate()
+    userLeft({ userId, channelName }) {
+      this.channels[channelName].members = this.channels[
+        channelName
+      ].members.filter((user) => user.id != userId);
+      this.$forceUpdate();
+    },
+    newMemberJoined({ userId, userName, completeChannelName }) {
+      if (!this.channels[completeChannelName].members)
+        this.channels[completeChannelName].members = [];
+      this.channels[completeChannelName].members.push({
+        id: userId,
+        name: userName,
+      });
+      this.$forceUpdate();
     },
     async channelsList(userChannels) {
       this.user = await axios.get("/me");
       this.user = this.user.data;
-      this.channels = {}
+      this.channels = {};
       for (let channel of userChannels) {
         const currentChannelName = `${channel.channel_name}:${channel.channel_author_id}`;
         if (!this.channels[currentChannelName]) {
@@ -313,7 +336,7 @@ export default {
             channelId: channel.channel_id,
             channelName: channel.channel_name,
             channelAuthor: channel.channel_author_id,
-            members:channel.members,
+            members: channel.members,
             messages: [],
           };
         }
@@ -322,10 +345,8 @@ export default {
           authorId: channel.message_author_id,
           authorName: channel.message_author_name,
         });
-        
       }
 
-      this.$forceUpdate();
       if (Object.keys(this.channels)[this.selectedChannel])
         this.selectedChannelName = Object.keys(this.channels)[
           this.selectedChannel
@@ -333,6 +354,7 @@ export default {
           0,
           Object.keys(this.channels)[this.selectedChannel].indexOf(":")
         );
+      this.$forceUpdate();
     },
     messageReceived(data) {
       let container = document.getElementById("wrapper");
@@ -386,25 +408,38 @@ export default {
     invitation(data) {
       if (this.user.email === data.recipient) {
         this.$socket.emit("acceptInvitation", data.channelId);
-        this.$forceUpdate();
       }
+    },
+    newChannel(channelInvitedIn) {
+      const currentChannelName = `${channelInvitedIn.name}:${channelInvitedIn.author}`;
+      this.channels[currentChannelName] = {
+        channelId: channelInvitedIn.id,
+        channelName: channelInvitedIn.name,
+        channelAuthor: channelInvitedIn.author,
+        members: [{ id: this.user.id, name: this.user.name }],
+        messages: [],
+      };
+      this.$forceUpdate();
     },
   },
 };
 </script>
 
 <style scoped>
-#channels,  #users {
+#channels,
+#users {
   background-color: #2c2f33;
 }
 
-#channels-list ul li:hover, #users-list ul li:hover {
+#channels-list ul li:hover,
+#users-list ul li:hover {
   cursor: pointer;
   background-color: #23272a;
 }
-#channels-list ul li,#users-list ul li {
+#channels-list ul li,
+#users-list ul li {
   padding: 10px;
-    max-width: 220px;
+  max-width: 220px;
   overflow: auto;
 }
 

@@ -13,7 +13,7 @@ router.post('/channel', hasToBeAuthenticated, async function (req, res) {
     res.json(channelToCreate)
 })
 
-router.delete('/channel', hasToBeAuthenticated, async function (req, res) {
+router.post('/channel/delete', hasToBeAuthenticated, async function (req, res) {
     if (!req.body.name) {
         res.status(401)
         res.send({
