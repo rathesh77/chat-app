@@ -17,6 +17,7 @@ import UserChannel from './entities/UserChannel'
 import { Channel, ChannelI } from './entities/Channel'
 
 import {authRouter, channelRouter, invitationRouter} from './routes'
+import Session from './entities/Session'
 let app = express()
 
 PostgresStore.init()
@@ -77,8 +78,10 @@ socket.on('connection', async (client: io.Socket) => {
             }
 
         }
+        client.join(client.handshake.session.id)
         client.emit('channelsList', userChannels)
     }
+    
     client.on('getChannelsAndMessages', async ()=>{
         let currentUser = client.handshake.session?.user
         // on recupere la liste des channels du client
@@ -122,7 +125,9 @@ socket.on('connection', async (client: io.Socket) => {
     client.on('invitation', async (data: any) => {
         const {channelId, recipient}= data
         await UserChannel.create(channelId, (await User.findByEmail(recipient)).id)       
-        socket.emit('invitation', data)
+        //socket.emit('invitation', data)
+        let recipientSocket = await Session.findByEmail(recipient)
+        socket.to(recipientSocket.sid).emit('invitation', data)
     })
     client.on('createChannel', async ({name}) => {
         const userId = client.handshake.session?.user?.id

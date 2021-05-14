@@ -1,4 +1,7 @@
+import PostgresStore from '../PostgresStore'
+
 class Session {
+
 
     static toSQLTable(): string {
         return `
@@ -15,6 +18,15 @@ class Session {
         `
     }
 
+    static async findByEmail(recipient: string) {
+        const result = await PostgresStore.pgPool.query({
+            text: `
+       SELECT sid from session where sess::text like $1
+
+       `, values: [`%"email":"${recipient}"%`]
+        })
+        return result.rows[0]
+    }
 }
 
 
