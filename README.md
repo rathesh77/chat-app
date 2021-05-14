@@ -14,6 +14,6 @@ A chatting application to chat with your friends through text communication chan
 - Open a terminal window and clone the repo
 - Run `docker compose up` in the root folder will pull the required images from docker hub and start the corresponding containers
 
-The frontend app will be running on port 8080
-The backend app will be running on port 3000
-PostgreSQL database will be running on port 5432
+The frontend app will be running on port 8080<\br>
+The backend app will be running on port 3000<\br>
+PostgreSQL database will be running on port 5432<\br>
