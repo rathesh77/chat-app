@@ -226,8 +226,8 @@ export default {
     },
     async signOut() {
       this.user = {};
-      await axios.get("/logout");
       this.$socket.disconnect();
+      await axios.get("/logout");
       this.$router.push({ path: "/login" });
     },
     async invitePerson() {
